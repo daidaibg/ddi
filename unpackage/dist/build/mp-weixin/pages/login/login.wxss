@@ -1,0 +1,1 @@
+.u-btn--red{background-color:#e56c95;color:#fff;border-color:#e56c95}.login{width:100%;min-height:100vh;box-sizing:border-box;padding:26rpx 82rpx}.login .u-border-bottom{display:flex;align-items:center}.login .u-border-bottom .dd-text{color:#686868;width:150rpx;text-align:center}.login .alreadybind{text-align:center}.login .alreadybind ._h2{font-size:40rpx}

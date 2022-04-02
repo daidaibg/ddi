@@ -1,0 +1,54 @@
+{
+  "setting": {},
+  "condition": {
+    "plugin": {
+      "list": []
+    },
+    "game": {
+      "list": []
+    },
+    "gamePlugin": {
+      "list": []
+    },
+    "miniprogram": {
+      "list": [
+        {
+          "name": "pages/index/index",
+          "pathName": "pages/index/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "日历",
+          "pathName": "pages/indexApp/rl/rl",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "设置",
+          "pathName": "pages/indexApp/setting/setting",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "节假日",
+          "pathName": "pages/indexApp/jjr/jjr",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "登录",
+          "pathName": "pages/login/login",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "卧底",
+          "pathName": "pages/indexApp/sswd/sswd",
+          "query": "",
+          "scene": null
+        }
+      ]
+    }
+  }
+}

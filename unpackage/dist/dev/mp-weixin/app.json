@@ -1,0 +1,26 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/indexApp/xkt/xkt",
+    "pages/indexApp/rl/rl",
+    "pages/indexApp/setting/setting",
+    "pages/indexApp/jjr/jjr",
+    "pages/login/login",
+    "pages/indexApp/sswd/sswd"
+  ],
+  "subPackages": [],
+  "window": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "呆呆bug",
+    "navigationBarBackgroundColor": "#2789FF",
+    "backgroundColorTop": "#2789FF",
+    "backgroundColorBottom": "#F6F9FA"
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "获取当前位置"
+    }
+  },
+  "usingComponents": {},
+  "sitemapLocation": "sitemap.json"
+}
