@@ -1,0 +1,11 @@
+{
+  "navigationBarTitleText": "",
+  "enablePullDownRefresh": false,
+  "navigationBarBackgroundColor": "#607995",
+  "backgroundColorTop": "#607995",
+  "backgroundColorBottom": "#607995",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "flipper": "/components/flipper/noAnimationFilpper"
+  }
+}

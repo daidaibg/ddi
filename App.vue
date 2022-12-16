@@ -59,7 +59,6 @@
 
 <style lang="scss">
 	@import "uview-ui/index.scss";
-	/*每个页面公共css */
 	* {
 		margin: 0;
 		padding: 0;
@@ -69,5 +68,4 @@
 		background-color: #F6F9FA;
 		min-height: 100%;
 	}
-	/*每个页面公共css */
 </style>

@@ -46,9 +46,9 @@
 						url: "/pages/indexApp/rl/rl"
 					},
 					{
-						image: '/static/img/index/sswd.png',
-						name: "谁是卧底",
-						url: "/pages/indexApp/sswd/sswd"
+						image: '/static/img/index/djs.png',
+						name: "倒计时",
+						url: "/pages/indexApp/djs/djs"
 					},
 					{
 						image: '/static/img/index/tx.png',

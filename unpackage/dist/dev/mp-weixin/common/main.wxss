@@ -3172,10 +3172,8 @@ u-dropdown {
 /* end-微信小程序编译后页面有组件名的元素，特别处理--end */
 /* start--头条小程序编译后页面有组件名的元素，特别处理--start */
 /* end-头条小程序编译后页面有组件名的元素，特别处理--end */
-/*每个页面公共css */
 page {
   background-color: #F6F9FA;
   min-height: 100%;
 }
-/*每个页面公共css */
 

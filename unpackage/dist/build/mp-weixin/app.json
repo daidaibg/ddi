@@ -6,7 +6,7 @@
     "pages/indexApp/setting/setting",
     "pages/indexApp/jjr/jjr",
     "pages/login/login",
-    "pages/indexApp/sswd/sswd"
+    "pages/indexApp/djs/djs"
   ],
   "subPackages": [],
   "window": {
@@ -21,6 +21,5 @@
       "desc": "获取当前位置"
     }
   },
-  "usingComponents": {},
-  "sitemapLocation": "sitemap.json"
+  "usingComponents": {}
 }
