@@ -52,7 +52,7 @@
 					},
 					{
 						image: '/static/img/index/tx.png',
-						name: "提醒",
+						name: "节假日",
 						url: "/pages/indexApp/jjr/jjr"
 					},
 					{

@@ -59,6 +59,10 @@
 
 <style lang="scss">
 	@import "uview-ui/index.scss";
+	@font-face {
+		font-family: 'DS-DIGI';
+		src: url('./static/font/DS-DIGI.ttf');
+	}
 	* {
 		margin: 0;
 		padding: 0;

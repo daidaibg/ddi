@@ -77,6 +77,7 @@ export default {
 	box-shadow: 0 0 6rpx rgba(0, 0, 0, 0.5);
 	text-align: center;
 	font-family: 'Helvetica Neue';
+	// font-family: 'DS-DIGI';
 	overflow: hidden;
 }
 .noAnimationFilpperitem{

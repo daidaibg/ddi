@@ -47,6 +47,13 @@
           "query": "",
           "launchMode": "default",
           "scene": null
+        },
+        {
+          "name": "提醒",
+          "pathName": "pages/indexApp/jjr/jjr",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
         }
       ]
     }

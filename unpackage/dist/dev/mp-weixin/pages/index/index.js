@@ -198,7 +198,7 @@ var _default = {
         url: "/pages/indexApp/djs/djs"
       }, {
         image: '/static/img/index/tx.png',
-        name: "提醒",
+        name: "节假日",
         url: "/pages/indexApp/jjr/jjr"
       }, {
         image: '/static/img/index/sq.png',

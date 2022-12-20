@@ -13,7 +13,7 @@
  */
 /* 颜色变量 */
 /* 行为相关颜色 */
-.u-btn--red {
+.u-btn--red.data-v-37f51aa4 {
   background-color: #E56C95;
   color: #fff;
   border-color: #E56C95;
@@ -29,31 +29,36 @@
 /* 垂直间距 */
 /* 透明度 */
 /* 文章场景相关 */
-.jjrlist {
+.jjrlist.data-v-37f51aa4 {
   width: 100%;
   box-sizing: border-box;
   padding: 4px 10rpx;
 }
-.jjrlist .jjrlistli {
+.jjrlist .jjrlistli.data-v-37f51aa4 {
   display: flex;
   height: 60rpx;
   line-height: 60rpx;
-  color: #383838;
-}
-.jjrlist .jjrlistli .jjrname {
+  width: 90%;
+  background-color: rgba(39, 137, 255, 0.1);
+  margin: 0 auto;
+  height: 240rpx;
+  border-radius: 16rpx;
+  margin-bottom: 64rpx;
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
-.jjrlist .jjrlistli .jjrname ._i {
-  color: #000;
-  font-size: 34rpx;
-  padding: 0 6px;
+.jjrlist .jjrlistli .jjr_title.data-v-37f51aa4 {
+  text-align: center;
+  font-size: 32rpx;
+  color: #212529;
 }
-.jjrlist .jjrlistli .time text {
-  color: #000;
-  padding: 0 6px;
-  font-size: 34rpx;
+.jjrlist .jjrlistli .jjy_date.data-v-37f51aa4 {
+  color: #555;
+  font-size: 24rpx;
 }
-.jjrlist .gooffwork {
+.jjrlist .gooffwork.data-v-37f51aa4 {
   width: 100%;
   font-size: 40rpx;
   justify-content: center;

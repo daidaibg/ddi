@@ -79,7 +79,7 @@ export default {
 				hour = Math.floor(leave1 / (3600 * 1000));
 				let leave2 = leave1 % (3600 * 1000); //计算小时数后剩余的毫秒数
 				minute = Math.floor(leave2 / (60 * 1000)); //计算相差分钟数
-				let leave3 = leave2 % (60 * 1000); //计算分钟数后剩余的毫秒数
+				let leave3 = leave2 % (60 * 1000); 
 				second = Math.round(leave3 / 1000);
 				
 				// hour = Math.floor((result_time / 1000 / 60 / 60) % 60);
