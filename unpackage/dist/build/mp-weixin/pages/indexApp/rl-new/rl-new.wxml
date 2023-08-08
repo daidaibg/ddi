@@ -1,0 +1,1 @@
+<view><xdd-calendar bind:change="__e" vue-id="740aa0c4-1" data-event-opts="{{[['^change',[['changeDay']]]]}}" bind:__l="__l"></xdd-calendar></view>

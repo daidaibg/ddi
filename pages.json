@@ -2,8 +2,8 @@
 	"easycom": {
 		"^u-(.*)": "uview-ui/components/u-$1/u-$1.vue"
 	},
-	"entryPagePath": "pages/indexApp/xkt/xkt",
-	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
+	"entryPagePath": "pages/index/index",
+	"pages": [ 
 		{
 			"path": "pages/index/index",
 			"style": {
@@ -34,26 +34,22 @@
 			}
 
 		}
-
-
-		, {
-			"path": "pages/indexApp/setting/setting",
+, {
+			"path": "pages/indexApp/rl-new/rl-new",
 			"style": {
-				"navigationBarTitleText": "",
-				"enablePullDownRefresh": false
+				"navigationBarTitleText": "私人小日历",
+				"enablePullDownRefresh": false,
+				"navigationBarBackgroundColor": "#E56C95",
+				"backgroundColorTop": "#E56C95",
+				"backgroundColorBottom": "#E56C95"
 			}
 
-		}, {
+		}
+
+		, {
 			"path": "pages/indexApp/jjr/jjr",
 			"style": {
 				"navigationBarTitleText": "",
-				"enablePullDownRefresh": false
-			}
-
-		}, {
-			"path": "pages/login/login",
-			"style": {
-				"navigationBarTitleText": "绑定手机号",
 				"enablePullDownRefresh": false
 			}
 

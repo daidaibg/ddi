@@ -1,9 +1,0 @@
-{
-  "navigationBarTitleText": "",
-  "enablePullDownRefresh": false,
-  "usingComponents": {
-    "u-cell-group": "/node-modules/uview-ui/components/u-cell-group/u-cell-group",
-    "u-cell-item": "/node-modules/uview-ui/components/u-cell-item/u-cell-item",
-    "u-action-sheet": "/node-modules/uview-ui/components/u-action-sheet/u-action-sheet"
-  }
-}

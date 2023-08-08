@@ -45,9 +45,14 @@
 						name: "日历",
 						url: "/pages/indexApp/rl/rl"
 					},
+					// {
+					// 	image: '/static/img/index/rl.png',
+					// 	name: "新-日历",
+					// 	url: "/pages/indexApp/rl-new/rl-new"
+					// },
 					{
 						image: '/static/img/index/djs.png',
-						name: "倒计时",
+						name: "除夕倒计时",
 						url: "/pages/indexApp/djs/djs"
 					},
 					{
@@ -55,11 +60,11 @@
 						name: "节假日",
 						url: "/pages/indexApp/jjr/jjr"
 					},
-					{
-						image: '/static/img/index/sq.png',
-						name: "设置",
-						url: "/pages/indexApp/setting/setting"
-					},
+					// {
+					// 	image: '/static/img/index/sq.png',
+					// 	name: "设置",
+					// 	url: "/pages/indexApp/setting/setting"
+					// },
 				],
 			}
 		},

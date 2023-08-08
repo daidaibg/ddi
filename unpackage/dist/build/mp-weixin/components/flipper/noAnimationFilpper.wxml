@@ -1,1 +1,1 @@
-<view class="noAnimationFilpper _div data-v-85c1e0f6"><view class="noAnimationFilpperitem _div data-v-85c1e0f6">{{frontText}}</view></view>
+<view class="time_wrap_list _div data-v-01fb068f" style="{{(wrapStyle)}}"><block wx:for="{{frontText.length}}" wx:for-item="i" wx:for-index="__i0__" wx:key="*this"><view class="noAnimationFilpper _div data-v-01fb068f"><view class="noAnimationFilpperitem _div data-v-01fb068f">{{frontText[i]}}</view></view></block></view>

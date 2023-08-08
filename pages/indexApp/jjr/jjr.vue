@@ -2,7 +2,7 @@
 	<view>
 		<ul class="jjrlist">
 			<li v-for="(item, index) in jjrList" :key="index" class="jjrlistli">
-				<p class="jjr_title">{{ currentYear }}年{{ item.name }}倒计时</p>
+				<p class="jjr_title">2023年{{ item.name }}倒计时</p>
 				<p class="jjy_date">{{ item.date }}</p>
 				<CountDown :timestamp="item.timestamp" />
 			</li>
@@ -12,16 +12,6 @@
 					<i>下班时间</i>
 					:&nbsp;
 				</span>
-				<u-count-down
-					:timestamp="gooffworktime / 1000"
-					autoplay
-					separator="zh"
-					separator-color="#383838"
-					font-size="34"
-					color="#000"
-					separator-size="24"
-					@end="finish"
-				></u-count-down>
 			</li>
 			<li v-else class="gooffwork jjrlistli">已经下班了，你还在卷什么!</li> -->
 		</ul>
@@ -74,10 +64,12 @@ export default {
 				let tgt_date = new Date(jjrDate[i].date);
 				let target_time = tgt_date.getTime();
 				let result_time = target_time - current_time;
-				newJjrDate.push({
-					...jjrDate[i],
-					timestamp: this.getInfo(result_time)
-				});
+				if (result_time != '' && result_time > 0) {
+					newJjrDate.push({
+						...jjrDate[i],
+						timestamp: this.getInfo(result_time)
+					});
+				}
 			}
 			this.jjrList = newJjrDate;
 		},
@@ -85,7 +77,7 @@ export default {
 			this.getjjr();
 			this.timer = setInterval(() => {
 				this.getjjr();
-			}, 1000);
+			}, 1000 - 5); //减去代码运行时间
 		},
 		getInfo(times) {
 			let day = Math.floor(times / 1000 / 60 / 60 / 24);
@@ -94,7 +86,7 @@ export default {
 			let second = Math.floor((times / 1000) % 60);
 			let obj = {
 				day: day < 10 ? '0' + day : day,
-				hour: hou < 10 ? '0' + hou : hou,
+				hour: hour < 10 ? '0' + hour : hour,
 				min: min < 10 ? '0' + min : min,
 				second: second < 10 ? '0' + second : second
 			};
@@ -189,7 +181,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-
 .jjrlist {
 	width: 100%;
 	box-sizing: border-box;

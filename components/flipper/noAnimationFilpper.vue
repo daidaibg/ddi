@@ -1,6 +1,8 @@
 <template>
-	<div class="noAnimationFilpper">
-		<div class="noAnimationFilpperitem">{{ frontText }}</div>
+	<div class="time_wrap_list" :style="wrapStyle">
+		<div class="noAnimationFilpper" v-for="i in frontText.length" :key="i">
+			<div class="noAnimationFilpperitem">{{ frontText[i] }}</div>
+		</div>
 	</div>
 </template>
 
@@ -14,8 +16,13 @@ export default {
 		// front paper text
 		// 前牌文字
 		frontText: {
-			type: [Number, String],
-			default: 0
+			type: [ String],
+			default: "00"
+		}
+	},
+	computed:{
+		wrapStyle(){
+			return `grid-template-columns:repeat(${this.frontText.length}, 1fr);`
 		}
 	},
 	methods: {
@@ -64,23 +71,27 @@ export default {
 </script>
 
 <style scoped lang="scss">
+.time_wrap_list {
+	display: grid;
+	column-gap: 6rpx;
+}
 .noAnimationFilpper {
 	display: inline-block;
 	position: relative;
-	width: 60rpx;
+	width: 58rpx;
 	height: 100rpx;
 	line-height: 100rpx;
 	border: solid 1rpx #000;
 	border-radius: 12rpx;
-	font-size: 66rpx;
+	font-size: 80rpx;
 	color: #fff;
 	box-shadow: 0 0 6rpx rgba(0, 0, 0, 0.5);
 	text-align: center;
 	font-family: 'Helvetica Neue';
-	// font-family: 'DS-DIGI';
+	font-family: 'DS-DIGI';
 	overflow: hidden;
+	background: #000;
 }
-.noAnimationFilpperitem{
-	 background: #000;
+.noAnimationFilpperitem {
 }
 </style>

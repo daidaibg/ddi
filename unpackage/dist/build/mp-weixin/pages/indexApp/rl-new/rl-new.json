@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "私人小日历",
+  "enablePullDownRefresh": false,
+  "navigationBarBackgroundColor": "#E56C95",
+  "backgroundColorTop": "#E56C95",
+  "backgroundColorBottom": "#E56C95",
+  "usingComponents": {
+    "xdd-calendar": "/components/xdd-calendar/xdd-calendar"
+  }
+}

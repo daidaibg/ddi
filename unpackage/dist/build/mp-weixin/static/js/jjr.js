@@ -1,6 +1,10 @@
 //倒计时使用
 export const jjrDate=[
 	{
+		date:"2022-12-19",
+		name:"test",
+	},
+	{
 		date:"2022-12-31",
 		name:"元旦",
 	},

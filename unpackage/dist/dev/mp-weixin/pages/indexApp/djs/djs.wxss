@@ -60,12 +60,11 @@
   text-align: center;
   position: relative;
   z-index: 2;
+  display: flex;
+  justify-content: center;
 }
 .FlipClock.data-v-84d335b8 .M-Flipper {
   margin: 0 3rpx;
-}
-.FlipClock.data-v-84d335b8 .noAnimationFilpper {
-  margin: 0 4rpx;
 }
 .FlipClock text.data-v-84d335b8 {
   display: inline-block;

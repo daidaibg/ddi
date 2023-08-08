@@ -29,22 +29,26 @@
 /* 垂直间距 */
 /* 透明度 */
 /* 文章场景相关 */
+.time_wrap_list.data-v-39c76566 {
+  display: grid;
+  -webkit-column-gap: 6rpx;
+          column-gap: 6rpx;
+}
 .noAnimationFilpper.data-v-39c76566 {
   display: inline-block;
   position: relative;
-  width: 60rpx;
+  width: 58rpx;
   height: 100rpx;
   line-height: 100rpx;
   border: solid 1rpx #000;
   border-radius: 12rpx;
-  font-size: 66rpx;
+  font-size: 80rpx;
   color: #fff;
   box-shadow: 0 0 6rpx rgba(0, 0, 0, 0.5);
   text-align: center;
   font-family: 'Helvetica Neue';
+  font-family: 'DS-DIGI';
   overflow: hidden;
-}
-.noAnimationFilpperitem.data-v-39c76566 {
   background: #000;
 }
 
