@@ -5,6 +5,11 @@
   "backgroundColorTop": "#E56C95",
   "backgroundColorBottom": "#E56C95",
   "usingComponents": {
-    "xdd-calendar": "/components/xdd-calendar/xdd-calendar"
+    "u-icon": "/node-modules/uview-ui/components/u-icon/u-icon",
+    "u-popup": "/node-modules/uview-ui/components/u-popup/u-popup",
+    "u-button": "/node-modules/uview-ui/components/u-button/u-button",
+    "u-calendar": "/node-modules/uview-ui/components/u-calendar/u-calendar",
+    "u-select": "/node-modules/uview-ui/components/u-select/u-select",
+    "rl-new-item": "/pages/indexApp/rl-new/rl-new-item"
   }
 }

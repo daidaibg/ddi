@@ -8,7 +8,9 @@
 				 @next="next" 
 				@prev="prev"
 				 @clickDay="clickDay"
-				:nowDate="item" :latestDate="setData.timestamp" :shiftsNum="setData.shiftsNum">
+				:nowDate="item" :latestDate="setData.timestamp" :shiftsNum="setData.shiftsNum"
+				ref="rlItemRef"
+				>
 					<view class="addconfig" @click="setconfig">
 						<u-icon name="plus" color="#FFF" size="30px"></u-icon>
 					</view>
@@ -93,16 +95,36 @@
 					icon:"none",
 					title:randomPopupTexts()
 				})
+				
+			},
+			refreshDate(){
+				let refs = this.$refs.rlItemRef
+				if(refs){
+					for (let i = 0; i < refs.length; i++) {
+						refs[i].init()
+					}
+				}
 			},
 			//确认
 			submit() {
 				uni.setStorageSync('snow-rl-config', {
 					...this.setData
 				});
+				this.refreshDate()
 				uni.showToast({
 					title: "设置成功！",
 				})
 				this.configShow = false;
+			},
+			//清空规则
+			clearSub() {
+				uni.removeStorageSync('snow-rl-config')
+				this.setDefaultConfig()
+				this.refreshDate()
+				wx.showToast({
+					title: "清空成功！",
+				})
+			
 			},
 			setDefaultConfig(){
 				let data = uni.getStorageSync('snow-rl-config');

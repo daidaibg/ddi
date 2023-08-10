@@ -170,7 +170,7 @@ __webpack_require__.r(__webpack_exports__);
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-/* WEBPACK VAR INJECTION */(function(uni) {
+/* WEBPACK VAR INJECTION */(function(uni, wx) {
 
 var _interopRequireDefault = __webpack_require__(/*! @babel/runtime/helpers/interopRequireDefault */ 4);
 Object.defineProperty(exports, "__esModule", {
@@ -236,13 +236,31 @@ var _default = {
         title: (0, _popupTexts.randomPopupTexts)()
       });
     },
+    refreshDate: function refreshDate() {
+      var refs = this.$refs.rlItemRef;
+      if (refs) {
+        for (var i = 0; i < refs.length; i++) {
+          refs[i].init();
+        }
+      }
+    },
     //确认
     submit: function submit() {
       uni.setStorageSync('snow-rl-config', _objectSpread({}, this.setData));
+      this.refreshDate();
       uni.showToast({
         title: "设置成功！"
       });
       this.configShow = false;
+    },
+    //清空规则
+    clearSub: function clearSub() {
+      uni.removeStorageSync('snow-rl-config');
+      this.setDefaultConfig();
+      this.refreshDate();
+      wx.showToast({
+        title: "清空成功！"
+      });
     },
     setDefaultConfig: function setDefaultConfig() {
       var data = uni.getStorageSync('snow-rl-config');
@@ -322,7 +340,7 @@ var _default = {
   }
 };
 exports.default = _default;
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./node_modules/@dcloudio/uni-mp-weixin/dist/index.js */ 2)["default"]))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./node_modules/@dcloudio/uni-mp-weixin/dist/index.js */ 2)["default"], __webpack_require__(/*! ./node_modules/@dcloudio/uni-mp-weixin/dist/wx.js */ 1)["default"]))
 
 /***/ }),
 
