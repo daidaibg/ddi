@@ -53,7 +53,7 @@
 				</view>
 				<view class="item">
 					<text>最近值班日期：</text>
-					<text @click="setletcTime">{{setData.time}}</text>
+					<text @click="setletcTime">{{setData.time ||""}}</text>
 				</view>
 				<view class="submit">
 					<u-button :ripple="true" @click="clearSub" plain size="medium ">清空规则
@@ -147,8 +147,6 @@
 			// }
 		},
 		methods: {
-
-
 			userdata() {
 				let wxUserInfo = wx.getStorageSync('wxUserInfo')
 				if (wxUserInfo) {
@@ -160,7 +158,7 @@
 			},
 			//设置默认配置
 			setdefault() {
-				let data = uni.getStorageSync('userData');
+				let data = uni.getStorageSync('snow-rl-config');
 				if (data) {
 					this.setData = data;
 					this.dataFlag = data.time
@@ -173,7 +171,7 @@
 			},
 			//清空规则
 			clearSub() {
-				uni.removeStorageSync('userData')
+				uni.removeStorageSync('snow-rl-config')
 				this.setdefault()
 				this.refreshDate();
 				console.log(this.setData, this.dataFlag, this.num)
@@ -183,7 +181,7 @@
 			},
 			//确认
 			submit() {
-				uni.setStorageSync('userData', {
+				uni.setStorageSync('snow-rl-config', {
 					...this.setData
 				});
 				this.setdefault()
@@ -482,7 +480,7 @@
 	}
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 	.rl {
 		width: 100%;
 	}

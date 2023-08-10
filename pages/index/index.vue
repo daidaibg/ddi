@@ -45,11 +45,11 @@
 						name: "日历",
 						url: "/pages/indexApp/rl/rl"
 					},
-					// {
-					// 	image: '/static/img/index/rl.png',
-					// 	name: "新-日历",
-					// 	url: "/pages/indexApp/rl-new/rl-new"
-					// },
+					{
+						image: '/static/img/index/rl.png',
+						name: "新-日历",
+						url: "/pages/indexApp/rl-new/rl-new"
+					},
 					{
 						image: '/static/img/index/djs.png',
 						name: "除夕倒计时",

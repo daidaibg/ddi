@@ -12281,6 +12281,46 @@ var vacation = {
   "2022109": {
     title: "国庆",
     type: "班"
+  },
+  "20230929": {
+    title: "国庆",
+    type: "休"
+  },
+  "20230930": {
+    title: "国庆",
+    type: "休"
+  },
+  "20231001": {
+    title: "国庆",
+    type: "休"
+  },
+  "20231002": {
+    title: "国庆",
+    type: "休"
+  },
+  "20231003": {
+    title: "国庆",
+    type: "休"
+  },
+  "20231004": {
+    title: "国庆",
+    type: "休"
+  },
+  "20231005": {
+    title: "国庆",
+    type: "休"
+  },
+  "20231006": {
+    title: "国庆",
+    type: "休"
+  },
+  "20231007": {
+    title: "国庆",
+    type: "班"
+  },
+  "20231008": {
+    title: "国庆",
+    type: "班"
   }
 };
 
@@ -12299,13 +12339,140 @@ function isAuth(key) {
 /* 92 */,
 /* 93 */,
 /* 94 */,
-/* 95 */,
+/* 95 */
+/*!*****************************************!*\
+  !*** D:/MyPro/dadiaxcx/util/getDate.js ***!
+  \*****************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _interopRequireDefault = __webpack_require__(/*! @babel/runtime/helpers/interopRequireDefault */ 4);
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _slicedToArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/slicedToArray */ 5));
+var _classCallCheck2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ 23));
+var _createClass2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/createClass */ 24));
+var getDate = /*#__PURE__*/function () {
+  function getDate(date) {
+    (0, _classCallCheck2.default)(this, getDate);
+    if (date) {
+      this.initDate = new Date(date);
+    } else {
+      this.initDate = new Date();
+    }
+  }
+  (0, _createClass2.default)(getDate, [{
+    key: "getFullYear",
+    value: function getFullYear() {
+      return this.initDate.getFullYear();
+    }
+
+    // 获取当前月
+  }, {
+    key: "getMonth",
+    value: function getMonth() {
+      return this.initDate.getMonth() + 1;
+    }
+
+    // 获取当前日
+  }, {
+    key: "getDate",
+    value: function getDate() {
+      return this.initDate.getDate();
+    }
+
+    // 日期格式化
+  }, {
+    key: "dateFormat",
+    value: function dateFormat() {
+      return "".concat(this.getFullYear(), "/").concat(this.getMonth(), "/").concat(this.getDate());
+    }
+  }, {
+    key: "getOffsetMonth",
+    value: function getOffsetMonth(offset) {
+      var date = new Date(this.getFullYear(), this.getMonth() - 1 + offset, this.getDate());
+      // console.log(date,offset);
+      return {
+        format: "".concat(date.getFullYear(), "/").concat(date.getMonth() + 1, "/").concat(date.getDate()),
+        year: date.getFullYear(),
+        month: date.getMonth(),
+        day: date.getDate()
+      };
+    }
+    // 获取当前月多少天
+  }], [{
+    key: "getDays",
+    value: function getDays(_ref) {
+      var year = _ref.year,
+        month = _ref.month;
+      return new Date(year, month, 0).getDate();
+    }
+
+    // 获取当前月从星期几开始 0--代表周日 这里返回了7 
+  }, {
+    key: "getMonthWeekBegin",
+    value: function getMonthWeekBegin(_ref2) {
+      var year = _ref2.year,
+        month = _ref2.month;
+      return new Date("".concat(year, "/").concat(month, "/01")).getDay() || 7;
+    }
+
+    // 获取当前日期星期几
+  }, {
+    key: "getWeekDay",
+    value: function getWeekDay(_ref3) {
+      var year = _ref3.year,
+        month = _ref3.month,
+        day = _ref3.day;
+      return new Date("".concat(year, "/").concat(month, "/").concat(day)).getDay() || 7;
+    }
+
+    // 获取上个月天数 year--当前年  month--当前月
+  }, {
+    key: "getUpDays",
+    value: function getUpDays(_ref4) {
+      var year = _ref4.year,
+        month = _ref4.month;
+      var _ref5 = month === 1 ? [year - 1, 12] : [year, month - 1];
+      var _ref6 = (0, _slicedToArray2.default)(_ref5, 2);
+      year = _ref6[0];
+      month = _ref6[1];
+      return new Date(year, month, 0).getDate();
+    }
+
+    // 获取下个月天数 year--当前年  month--当前月
+  }, {
+    key: "getDownDays",
+    value: function getDownDays(_ref7) {
+      var year = _ref7.year,
+        month = _ref7.month;
+      var _ref8 = month === 12 ? [year + 1, 1] : [year, month + 1];
+      var _ref9 = (0, _slicedToArray2.default)(_ref8, 2);
+      year = _ref9[0];
+      month = _ref9[1];
+      return new Date(year, month, 0).getDate();
+    }
+  }]);
+  return getDate;
+}();
+var _default = getDate;
+exports.default = _default;
+
+/***/ }),
 /* 96 */,
 /* 97 */,
 /* 98 */,
 /* 99 */,
 /* 100 */,
-/* 101 */
+/* 101 */,
+/* 102 */,
+/* 103 */,
+/* 104 */
 /*!******************************************!*\
   !*** D:/MyPro/dadiaxcx/static/js/jjr.js ***!
   \******************************************/
@@ -12348,15 +12515,15 @@ var jjrDate = [{
 exports.jjrDate = jjrDate;
 
 /***/ }),
-/* 102 */,
-/* 103 */,
-/* 104 */,
 /* 105 */,
 /* 106 */,
 /* 107 */,
 /* 108 */,
 /* 109 */,
-/* 110 */
+/* 110 */,
+/* 111 */,
+/* 112 */,
+/* 113 */
 /*!***********************************************!*\
   !*** D:/MyPro/dadiaxcx/util/lunar-alendar.js ***!
   \***********************************************/
@@ -12851,9 +13018,6 @@ var _default = calendar;
 exports.default = _default;
 
 /***/ }),
-/* 111 */,
-/* 112 */,
-/* 113 */,
 /* 114 */,
 /* 115 */,
 /* 116 */,
@@ -12914,117 +13078,197 @@ exports.default = _default;
 /* 171 */,
 /* 172 */,
 /* 173 */,
-/* 174 */
-/*!*********************************************************!*\
-  !*** D:/MyPro/dadiaxcx/components/xdd-calendar/date.js ***!
-  \*********************************************************/
+/* 174 */,
+/* 175 */,
+/* 176 */,
+/* 177 */
+/*!*****************************************************!*\
+  !*** D:/MyPro/dadiaxcx/static/js/china_holidays.js ***!
+  \*****************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var _interopRequireDefault = __webpack_require__(/*! @babel/runtime/helpers/interopRequireDefault */ 4);
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = void 0;
-var _slicedToArray2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/slicedToArray */ 5));
-var _classCallCheck2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/classCallCheck */ 23));
-var _createClass2 = _interopRequireDefault(__webpack_require__(/*! @babel/runtime/helpers/createClass */ 24));
-// 获取日期的各种方法
-var getDateFun = /*#__PURE__*/function () {
-  function getDateFun() {
-    (0, _classCallCheck2.default)(this, getDateFun);
+exports.solarHolidays = exports.lunarHolidays = void 0;
+// 阳历
+var solarHolidays = {
+  "1-1": {
+    "month": 1,
+    "date": 1,
+    "lunarCalendar": false,
+    "name": "元旦"
+  },
+  "3-12": {
+    "month": 3,
+    "date": 12,
+    "lunarCalendar": false,
+    "name": "植树节"
+  },
+  "4-1": {
+    "month": 4,
+    "date": 1,
+    "lunarCalendar": false,
+    "name": "愚人节"
+  },
+  "4-4": {
+    "month": 4,
+    "date": 4,
+    "lunarCalendar": false,
+    "name": "清明节"
+  },
+  "5-1": {
+    "month": 5,
+    "date": 1,
+    "lunarCalendar": false,
+    "name": "劳动节"
+  },
+  "9-10": {
+    "month": 9,
+    "date": 10,
+    "lunarCalendar": false,
+    "name": "教师节"
+  },
+  "10-1": {
+    "month": 10,
+    "date": 1,
+    "lunarCalendar": false,
+    "name": "国庆节"
+  },
+  "11-1": {
+    "month": 11,
+    "date": 1,
+    "lunarCalendar": false,
+    "name": "万圣节"
+  },
+  "12-24": {
+    "month": 12,
+    "date": 24,
+    "lunarCalendar": false,
+    "name": "平安夜"
+  },
+  "12-25": {
+    "month": 12,
+    "date": 25,
+    "lunarCalendar": false,
+    "name": "圣诞节"
   }
-  (0, _createClass2.default)(getDateFun, [{
-    key: "getFullYear",
-    value:
-    // 获取当前年
-    function getFullYear() {
-      var date = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : new Date();
-      return date.getFullYear();
-    }
+};
+//农历节日
+exports.solarHolidays = solarHolidays;
+var lunarHolidays = {
+  "12-8": {
+    "month": 12,
+    "date": 8,
+    "lunarCalendar": true,
+    "name": "腊八节"
+  },
+  "12-30": {
+    "month": 12,
+    "date": 30,
+    "lunarCalendar": true,
+    "name": "除夕"
+  },
+  "1-1": {
+    "month": 1,
+    "date": 1,
+    "lunarCalendar": true,
+    "name": "春节"
+  },
+  "1-15": {
+    "month": 1,
+    "date": 15,
+    "lunarCalendar": true,
+    "name": "元宵节"
+  },
+  "5-5": {
+    "month": 5,
+    "date": 5,
+    "lunarCalendar": true,
+    "name": "端午节"
+  },
+  "8-15": {
+    "month": 8,
+    "date": 15,
+    "lunarCalendar": true,
+    "name": "中秋节"
+  },
+  "9-9": {
+    "month": 9,
+    "date": 9,
+    "lunarCalendar": true,
+    "name": "重阳节"
+  }
+};
+exports.lunarHolidays = lunarHolidays;
 
-    // 获取当前月
-  }, {
-    key: "getMonth",
-    value: function getMonth() {
-      var date = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : new Date();
-      return date.getMonth() + 1;
-    }
+/***/ }),
+/* 178 */,
+/* 179 */,
+/* 180 */,
+/* 181 */,
+/* 182 */,
+/* 183 */,
+/* 184 */,
+/* 185 */,
+/* 186 */,
+/* 187 */,
+/* 188 */,
+/* 189 */,
+/* 190 */,
+/* 191 */,
+/* 192 */,
+/* 193 */,
+/* 194 */,
+/* 195 */,
+/* 196 */,
+/* 197 */,
+/* 198 */,
+/* 199 */,
+/* 200 */,
+/* 201 */,
+/* 202 */,
+/* 203 */,
+/* 204 */,
+/* 205 */,
+/* 206 */,
+/* 207 */,
+/* 208 */,
+/* 209 */,
+/* 210 */,
+/* 211 */,
+/* 212 */,
+/* 213 */,
+/* 214 */,
+/* 215 */,
+/* 216 */,
+/* 217 */,
+/* 218 */,
+/* 219 */,
+/* 220 */
+/*!**************************************************!*\
+  !*** D:/MyPro/dadiaxcx/static/js/popupTexts .js ***!
+  \**************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-    // 获取当前日
-  }, {
-    key: "getDate",
-    value: function getDate() {
-      var date = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : new Date();
-      return date.getDate();
-    }
+"use strict";
 
-    // 获取当前月多少天
-  }, {
-    key: "getDays",
-    value: function getDays(_ref) {
-      var year = _ref.year,
-        month = _ref.month;
-      return new Date(year, month, 0).getDate();
-    }
 
-    // 获取当前月从星期几开始 0--代表周日 这里返回了7 
-  }, {
-    key: "getMonthWeekBegin",
-    value: function getMonthWeekBegin(_ref2) {
-      var year = _ref2.year,
-        month = _ref2.month;
-      return new Date("".concat(year, "/").concat(month, "/01")).getDay() || 7;
-    }
-
-    // 获取当前日期星期几
-  }, {
-    key: "getWeekDay",
-    value: function getWeekDay(_ref3) {
-      var year = _ref3.year,
-        month = _ref3.month,
-        day = _ref3.day;
-      return new Date("".concat(year, "/").concat(month, "/").concat(day)).getDay() || 7;
-    }
-
-    // 获取上个月天数 year--当前年  month--当前月
-  }, {
-    key: "getUpDays",
-    value: function getUpDays(_ref4) {
-      var year = _ref4.year,
-        month = _ref4.month;
-      var _ref5 = month === 1 ? [year - 1, 12] : [year, month - 1];
-      var _ref6 = (0, _slicedToArray2.default)(_ref5, 2);
-      year = _ref6[0];
-      month = _ref6[1];
-      return new Date(year, month, 0).getDate();
-    }
-
-    // 获取下个月天数 year--当前年  month--当前月
-  }, {
-    key: "getDownDays",
-    value: function getDownDays(_ref7) {
-      var year = _ref7.year,
-        month = _ref7.month;
-      var _ref8 = month === 12 ? [year + 1, 1] : [year, month + 1];
-      var _ref9 = (0, _slicedToArray2.default)(_ref8, 2);
-      year = _ref9[0];
-      month = _ref9[1];
-      return new Date(year, month, 0).getDate();
-    }
-
-    // 日期格式化
-  }, {
-    key: "dateFormat",
-    value: function dateFormat() {}
-  }]);
-  return getDateFun;
-}();
-var _default = new getDateFun();
-exports.default = _default;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.randomPopupTexts = void 0;
+var popupTexts = ["当心，我会咬你的！😈", "哇，你竟然点到我了！🙀", "不要点我，我怕痒！🤣", "救命！有只小怪兽！👾", "别点了，我可是有脾气的！😡", "你刚刚触发了我的秘密技能！🌟", "恭喜你，获得了幸运点击奖励！🎉", "我是你的数字精灵，有什么吩咐？🧚‍♀️", "嘘！这是个秘密通道入口！🔒", "你真棒，继续努力点击吧！👍", "嗨，点到我就是你的好运开始！🌈", "嘿，我是弹窗精灵，有什么需求吗？🪄", "快来帮我驱赶恶魔，点击就能消灭它们！👹", "小心，点击我可能会释放小小怪兽！👻", "想要一份点击能量吗？来点击我吧！⚡️", "我是隐藏任务触发器，看看你能找到几个吧！🔍", "喂！小心点，我可是有感情的！❤️", "别停，继续点击，惊喜在前方！🎁", "我是机会之窗，你今天运气爆棚！🍀", "点我点我，看看会发生什么神奇事情！🔮"];
+var randomPopupTexts = function randomPopupTexts() {
+  var randomIndex = Math.floor(Math.random() * popupTexts.length);
+  return popupTexts[randomIndex];
+};
+exports.randomPopupTexts = randomPopupTexts;
 
 /***/ })
 ]]);
