@@ -2,7 +2,6 @@
   "pages": [
     "pages/index/index",
     "pages/indexApp/xkt/xkt",
-    "pages/indexApp/rl/rl",
     "pages/indexApp/rl-new/rl-new",
     "pages/indexApp/jjr/jjr",
     "pages/indexApp/djs/djs"

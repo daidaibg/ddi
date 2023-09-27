@@ -780,8 +780,8 @@ function populateParameters(result) {
     appVersion: "1.0.0",
     appVersionCode: "100",
     appLanguage: getAppLanguage(hostLanguage),
-    uniCompileVersion: "3.8.7",
-    uniRuntimeVersion: "3.8.7",
+    uniCompileVersion: "3.8.12",
+    uniRuntimeVersion: "3.8.12",
     uniPlatform: undefined || "mp-weixin",
     deviceBrand: deviceBrand,
     deviceModel: model,
@@ -1557,7 +1557,7 @@ function initData(vueOptions, context) {
     try {
       data = data.call(context); // 支持 Vue.prototype 上挂的数据
     } catch (e) {
-      if (Object({"NODE_ENV":"development","VUE_APP_DARK_MODE":"false","VUE_APP_NAME":"dadiaxcx","VUE_APP_PLATFORM":"mp-weixin","BASE_URL":"/"}).VUE_APP_DEBUG) {
+      if (Object({"VUE_APP_DARK_MODE":"false","VUE_APP_NAME":"dadiaxcx","VUE_APP_PLATFORM":"mp-weixin","NODE_ENV":"development","BASE_URL":"/"}).VUE_APP_DEBUG) {
         console.warn('根据 Vue 的 data 函数初始化小程序 data 失败，请尽量确保 data 函数中不访问 vm 对象，否则可能影响首次数据渲染速度。', data);
       }
     }
@@ -8934,7 +8934,7 @@ function type(obj) {
 
 function flushCallbacks$1(vm) {
     if (vm.__next_tick_callbacks && vm.__next_tick_callbacks.length) {
-        if (Object({"NODE_ENV":"development","VUE_APP_DARK_MODE":"false","VUE_APP_NAME":"dadiaxcx","VUE_APP_PLATFORM":"mp-weixin","BASE_URL":"/"}).VUE_APP_DEBUG) {
+        if (Object({"VUE_APP_DARK_MODE":"false","VUE_APP_NAME":"dadiaxcx","VUE_APP_PLATFORM":"mp-weixin","NODE_ENV":"development","BASE_URL":"/"}).VUE_APP_DEBUG) {
             var mpInstance = vm.$scope;
             console.log('[' + (+new Date) + '][' + (mpInstance.is || mpInstance.route) + '][' + vm._uid +
                 ']:flushCallbacks[' + vm.__next_tick_callbacks.length + ']');
@@ -8955,14 +8955,14 @@ function nextTick$1(vm, cb) {
     //1.nextTick 之前 已 setData 且 setData 还未回调完成
     //2.nextTick 之前存在 render watcher
     if (!vm.__next_tick_pending && !hasRenderWatcher(vm)) {
-        if(Object({"NODE_ENV":"development","VUE_APP_DARK_MODE":"false","VUE_APP_NAME":"dadiaxcx","VUE_APP_PLATFORM":"mp-weixin","BASE_URL":"/"}).VUE_APP_DEBUG){
+        if(Object({"VUE_APP_DARK_MODE":"false","VUE_APP_NAME":"dadiaxcx","VUE_APP_PLATFORM":"mp-weixin","NODE_ENV":"development","BASE_URL":"/"}).VUE_APP_DEBUG){
             var mpInstance = vm.$scope;
             console.log('[' + (+new Date) + '][' + (mpInstance.is || mpInstance.route) + '][' + vm._uid +
                 ']:nextVueTick');
         }
         return nextTick(cb, vm)
     }else{
-        if(Object({"NODE_ENV":"development","VUE_APP_DARK_MODE":"false","VUE_APP_NAME":"dadiaxcx","VUE_APP_PLATFORM":"mp-weixin","BASE_URL":"/"}).VUE_APP_DEBUG){
+        if(Object({"VUE_APP_DARK_MODE":"false","VUE_APP_NAME":"dadiaxcx","VUE_APP_PLATFORM":"mp-weixin","NODE_ENV":"development","BASE_URL":"/"}).VUE_APP_DEBUG){
             var mpInstance$1 = vm.$scope;
             console.log('[' + (+new Date) + '][' + (mpInstance$1.is || mpInstance$1.route) + '][' + vm._uid +
                 ']:nextMPTick');
@@ -9058,7 +9058,7 @@ var patch = function(oldVnode, vnode) {
     });
     var diffData = this.$shouldDiffData === false ? data : diff(data, mpData);
     if (Object.keys(diffData).length) {
-      if (Object({"NODE_ENV":"development","VUE_APP_DARK_MODE":"false","VUE_APP_NAME":"dadiaxcx","VUE_APP_PLATFORM":"mp-weixin","BASE_URL":"/"}).VUE_APP_DEBUG) {
+      if (Object({"VUE_APP_DARK_MODE":"false","VUE_APP_NAME":"dadiaxcx","VUE_APP_PLATFORM":"mp-weixin","NODE_ENV":"development","BASE_URL":"/"}).VUE_APP_DEBUG) {
         console.log('[' + (+new Date) + '][' + (mpInstance.is || mpInstance.route) + '][' + this._uid +
           ']差量更新',
           JSON.stringify(diffData));
@@ -12464,7 +12464,28 @@ var _default = getDate;
 exports.default = _default;
 
 /***/ }),
-/* 96 */,
+/* 96 */
+/*!**************************************************!*\
+  !*** D:/MyPro/dadiaxcx/static/js/popupTexts .js ***!
+  \**************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.randomPopupTexts = void 0;
+var popupTexts = ["当心，我会咬你的！😈", "哇，你竟然点到我了！🙀", "不要点我，我怕痒！🤣", "救命！有只小怪兽！👾", "别点了，我可是有脾气的！😡", "你刚刚触发了我的秘密技能！🌟", "恭喜你，获得了幸运点击奖励！🎉", "我是你的数字精灵，有什么吩咐？🧚‍♀️", "嘘！这是个秘密通道入口！🔒", "你真棒，继续努力点击吧！👍", "嗨，点到我就是你的好运开始！🌈", "嘿，我是弹窗精灵，有什么需求吗？🪄", "快来帮我驱赶恶魔，点击就能消灭它们！👹", "小心，点击我可能会释放小小怪兽！👻", "想要一份点击能量吗？来点击我吧！⚡️", "我是隐藏任务触发器，看看你能找到几个吧！🔍", "喂！小心点，我可是有感情的！❤️", "别停，继续点击，惊喜在前方！🎁", "我是机会之窗，你今天运气爆棚！🍀", "点我点我，看看会发生什么神奇事情！🔮"];
+var randomPopupTexts = function randomPopupTexts() {
+  var randomIndex = Math.floor(Math.random() * popupTexts.length);
+  return popupTexts[randomIndex];
+};
+exports.randomPopupTexts = randomPopupTexts;
+
+/***/ }),
 /* 97 */,
 /* 98 */,
 /* 99 */,
@@ -12472,7 +12493,8 @@ exports.default = _default;
 /* 101 */,
 /* 102 */,
 /* 103 */,
-/* 104 */
+/* 104 */,
+/* 105 */
 /*!******************************************!*\
   !*** D:/MyPro/dadiaxcx/static/js/jjr.js ***!
   \******************************************/
@@ -12515,7 +12537,6 @@ var jjrDate = [{
 exports.jjrDate = jjrDate;
 
 /***/ }),
-/* 105 */,
 /* 106 */,
 /* 107 */,
 /* 108 */,
@@ -12523,7 +12544,8 @@ exports.jjrDate = jjrDate;
 /* 110 */,
 /* 111 */,
 /* 112 */,
-/* 113 */
+/* 113 */,
+/* 114 */
 /*!***********************************************!*\
   !*** D:/MyPro/dadiaxcx/util/lunar-alendar.js ***!
   \***********************************************/
@@ -13018,7 +13040,6 @@ var _default = calendar;
 exports.default = _default;
 
 /***/ }),
-/* 114 */,
 /* 115 */,
 /* 116 */,
 /* 117 */,
@@ -13081,7 +13102,8 @@ exports.default = _default;
 /* 174 */,
 /* 175 */,
 /* 176 */,
-/* 177 */
+/* 177 */,
+/* 178 */
 /*!*****************************************************!*\
   !*** D:/MyPro/dadiaxcx/static/js/china_holidays.js ***!
   \*****************************************************/
@@ -13205,70 +13227,6 @@ var lunarHolidays = {
   }
 };
 exports.lunarHolidays = lunarHolidays;
-
-/***/ }),
-/* 178 */,
-/* 179 */,
-/* 180 */,
-/* 181 */,
-/* 182 */,
-/* 183 */,
-/* 184 */,
-/* 185 */,
-/* 186 */,
-/* 187 */,
-/* 188 */,
-/* 189 */,
-/* 190 */,
-/* 191 */,
-/* 192 */,
-/* 193 */,
-/* 194 */,
-/* 195 */,
-/* 196 */,
-/* 197 */,
-/* 198 */,
-/* 199 */,
-/* 200 */,
-/* 201 */,
-/* 202 */,
-/* 203 */,
-/* 204 */,
-/* 205 */,
-/* 206 */,
-/* 207 */,
-/* 208 */,
-/* 209 */,
-/* 210 */,
-/* 211 */,
-/* 212 */,
-/* 213 */,
-/* 214 */,
-/* 215 */,
-/* 216 */,
-/* 217 */,
-/* 218 */,
-/* 219 */,
-/* 220 */
-/*!**************************************************!*\
-  !*** D:/MyPro/dadiaxcx/static/js/popupTexts .js ***!
-  \**************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.randomPopupTexts = void 0;
-var popupTexts = ["当心，我会咬你的！😈", "哇，你竟然点到我了！🙀", "不要点我，我怕痒！🤣", "救命！有只小怪兽！👾", "别点了，我可是有脾气的！😡", "你刚刚触发了我的秘密技能！🌟", "恭喜你，获得了幸运点击奖励！🎉", "我是你的数字精灵，有什么吩咐？🧚‍♀️", "嘘！这是个秘密通道入口！🔒", "你真棒，继续努力点击吧！👍", "嗨，点到我就是你的好运开始！🌈", "嘿，我是弹窗精灵，有什么需求吗？🪄", "快来帮我驱赶恶魔，点击就能消灭它们！👹", "小心，点击我可能会释放小小怪兽！👻", "想要一份点击能量吗？来点击我吧！⚡️", "我是隐藏任务触发器，看看你能找到几个吧！🔍", "喂！小心点，我可是有感情的！❤️", "别停，继续点击，惊喜在前方！🎁", "我是机会之窗，你今天运气爆棚！🍀", "点我点我，看看会发生什么神奇事情！🔮"];
-var randomPopupTexts = function randomPopupTexts() {
-  var randomIndex = Math.floor(Math.random() * popupTexts.length);
-  return popupTexts[randomIndex];
-};
-exports.randomPopupTexts = randomPopupTexts;
 
 /***/ })
 ]]);

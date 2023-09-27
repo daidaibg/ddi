@@ -3,8 +3,7 @@
 		"^u-(.*)": "uview-ui/components/u-$1/u-$1.vue"
 	},
 	"entryPagePath": "pages/index/index",
-	"pages": [ 
-		{
+	"pages": [{
 			"path": "pages/index/index",
 			"style": {
 				"navigationBarTitleText": "呆呆bug",
@@ -21,20 +20,7 @@
 			}
 
 		}
-
-
 		, {
-			"path": "pages/indexApp/rl/rl",
-			"style": {
-				"navigationBarTitleText": "私人小日历",
-				"enablePullDownRefresh": false,
-				"navigationBarBackgroundColor": "#E56C95",
-				"backgroundColorTop": "#E56C95",
-				"backgroundColorBottom": "#E56C95"
-			}
-
-		}
-, {
 			"path": "pages/indexApp/rl-new/rl-new",
 			"style": {
 				"navigationBarTitleText": "私人小日历",
@@ -57,15 +43,15 @@
 			"path": "pages/indexApp/djs/djs",
 			"style": {
 				"navigationBarTitleText": "",
-				"enablePullDownRefresh": false ,
+				"enablePullDownRefresh": false,
 				"navigationBarBackgroundColor": "#607995",
 				"backgroundColorTop": "#607995",
 				"backgroundColorBottom": "#607995",
 				"navigationStyle": "custom"
-				
+
 			}
 		}
-    ],
+	],
 	"globalStyle": {
 		"navigationBarTextStyle": "#FFFFFF",
 		"navigationBarTitleText": "呆呆bug",

@@ -17,7 +17,6 @@
 <script>
 	import Refresh from "../../components/Refresh/Refresh/Refresh.vue"
 	export default {
-		// options: { styleIsolation: 'shared' }  , //可以样式穿透
 		data() {
 			return {
 				titleStyle: {
@@ -42,12 +41,7 @@
 					},
 					{
 						image: '/static/img/index/rl.png',
-						name: "日历",
-						url: "/pages/indexApp/rl/rl"
-					},
-					{
-						image: '/static/img/index/rl.png',
-						name: "新-日历",
+						name: "值班日历",
 						url: "/pages/indexApp/rl-new/rl-new"
 					},
 					{

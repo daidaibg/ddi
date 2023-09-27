@@ -155,8 +155,9 @@
 				this.setData.shiftsNum = e[0].value;
 			},
 			next(e) {
+				console.log(this.swiperActive);
 				e && e.preventDefault();
-				if (this.swiperActive == 3) {
+				if (this.swiperActive ==4) {
 					this.swiperActive = 0;
 				} else {
 					this.swiperActive++;
@@ -164,9 +165,10 @@
 
 			},
 			prev(e) {
+				console.log(this.swiperActive);
 				e && e.preventDefault();
 				if (this.swiperActive == 0) {
-					this.swiperActive = 3;
+					this.swiperActive ==4 ;
 				} else {
 					this.swiperActive--;
 				}

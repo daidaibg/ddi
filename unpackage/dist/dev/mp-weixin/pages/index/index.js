@@ -101,7 +101,7 @@ var components
 try {
   components = {
     uSwiper: function () {
-      return __webpack_require__.e(/*! import() | node-modules/uview-ui/components/u-swiper/u-swiper */ "node-modules/uview-ui/components/u-swiper/u-swiper").then(__webpack_require__.bind(null, /*! uview-ui/components/u-swiper/u-swiper.vue */ 116))
+      return __webpack_require__.e(/*! import() | node-modules/uview-ui/components/u-swiper/u-swiper */ "node-modules/uview-ui/components/u-swiper/u-swiper").then(__webpack_require__.bind(null, /*! uview-ui/components/u-swiper/u-swiper.vue */ 117))
     },
   }
 } catch (e) {
@@ -166,11 +166,10 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = void 0;
 var Refresh = function Refresh() {
   __webpack_require__.e(/*! require.ensure | components/Refresh/Refresh/Refresh */ "components/Refresh/Refresh/Refresh").then((function () {
-    return resolve(__webpack_require__(/*! ../../components/Refresh/Refresh/Refresh.vue */ 123));
+    return resolve(__webpack_require__(/*! ../../components/Refresh/Refresh/Refresh.vue */ 124));
   }).bind(null, __webpack_require__)).catch(__webpack_require__.oe);
 };
 var _default = {
-  // options: { styleIsolation: 'shared' }  , //可以样式穿透
   data: function data() {
     return {
       titleStyle: {
@@ -190,11 +189,7 @@ var _default = {
         url: "/pages/indexApp/xkt/xkt"
       }, {
         image: '/static/img/index/rl.png',
-        name: "日历",
-        url: "/pages/indexApp/rl/rl"
-      }, {
-        image: '/static/img/index/rl.png',
-        name: "新-日历",
+        name: "值班日历",
         url: "/pages/indexApp/rl-new/rl-new"
       }, {
         image: '/static/img/index/djs.png',
