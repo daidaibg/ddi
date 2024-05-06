@@ -83,6 +83,15 @@
 			    label: index + 1
 			}));
 		},
+		onShareAppMessage(res) {
+		    //console.log('onShareAppMessage',res);
+		    return {
+		      title: '私人小日历',
+		      path: '/pages/index/index?share=true',
+		    }
+		  },
+		 
+		//onShareAppMessage {from: "button", target: {…}}
 		methods: {
 			init() {
 				// const nowDate = new getDate(`2023/11/09`)
