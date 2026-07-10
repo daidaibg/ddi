@@ -1,7 +1,0 @@
-{
-  "navigationBarTitleText": "",
-  "enablePullDownRefresh": false,
-  "usingComponents": {
-    "count-down": "/components/countDown/countDown"
-  }
-}

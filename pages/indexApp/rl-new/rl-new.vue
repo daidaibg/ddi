@@ -1,307 +1,222 @@
 <template>
 	<view class="snow-calendar">
-		<swiper class="swiper" :indicator-dots="false" :autoplay="false" easing-function="linear"
-			:current="swiperActive" :duration="duration" circular @change="swiperChange"
-			@animationfinish="animationfinish">
-			<swiper-item v-for="(item, i) in swiperList" :key="i" class="swiper_item">
-				<RlNewItem class="calender-content"
-				 @next="next" 
-				@prev="prev"
-				 @clickDay="clickDay"
-				:nowDate="item" :latestDate="setData.timestamp" :shiftsNum="setData.shiftsNum"
-				ref="rlItemRef"
+		<view class="background-glow glow-one" />
+		<view class="background-glow glow-two" />
+		<view class="calendar-toolbar">
+			<view class="toolbar-copy">
+				<text class="toolbar-title">值班日历</text>
+				<text class="toolbar-subtitle">农历、节假日与轮班安排</text>
+			</view>
+			<view class="today-button" hover-class="today-button--pressed" @click="goToday">今天</view>
+		</view>
+
+		<swiper class="swiper" :current="swiperActive" :duration="duration" easing-function="easeOutCubic" circular @change="swiperChange">
+			<swiper-item v-for="item in swiperList" :key="item" class="swiper-item">
+				<RlNewItem
+					class="calendar-content"
+					:now-date="item"
+					:selected-date="selectedDate"
+					:latest-date="setData.timestamp"
+					:shifts-num="setData.shiftsNum"
+					:holiday-map="holidayMap"
+					@click-day="clickDay"
+					@next="next"
+					@prev="prev"
 				>
-					<view class="addconfig" @click="setconfig">
-						<u-icon name="plus" color="#FFF" size="30px"></u-icon>
+					<view class="calendar-middle-action">
+						<view class="add-config" hover-class="add-config--pressed" @click="openConfig">
+						<u-icon name="setting" color="#ffffff" size="38rpx" />
+						</view>
 					</view>
 				</RlNewItem>
 			</swiper-item>
 		</swiper>
-		<u-popup v-model="configShow" mode="bottom" round="14" closeable>
-			<view class="addWrap">
-				<p>👿💀☠️💩🤡👹👺👻👽👾🤖😺😸😹😻😼😽🙀😿😾🙈🙉🙊</p>
-				<p>保存后规则会存在缓存中，清除缓存需要重新设置规则哟！</p>
-				<p>0 代表默认不值班哟🥰🥰🥰</p>
-				<view class="item">
-					<text>总班数：</text>
-					<text @click="setletcNum">{{setData.shiftsNum}}</text>
+
+		<view class="calendar-summary">
+			<view class="summary-heading">
+				<view><text class="summary-title">日期小笺</text><text class="summary-subtitle">{{ selectedDay ? selectedDay.ncWeek : '选择日期查看排班状态' }}</text></view>
+				<text class="summary-date">{{ selectedDay ? `${selectedDay.cMonth} 月 ${selectedDay.cDay} 日` : '今日' }}</text>
+			</view>
+			<view v-if="selectedDay" class="summary-status">
+				<text class="summary-lunar">{{ selectedDay.lunarLabel }}</text>
+				<text v-if="selectedDay.isOnDuty" class="status-pill is-duty">值班日</text>
+				<text v-else-if="selectedDay.isVacation" class="status-pill is-vacation">休息日</text>
+				<text v-else-if="selectedDay.isCompensatoryLeave" class="status-pill is-workday">补班日</text>
+				<text v-else class="status-pill is-normal">常规日期</text>
+			</view>
+			<view v-else class="summary-empty"><u-icon name="calendar" color="#df8ca8" size="30rpx" /><text>轻触日历中的日期，查看当天的农历与排班提示</text></view>
+			<view class="rule-overview"><view><text>轮班周期</text><text class="rule-value">{{ setData.shiftsNum || '未设置' }}</text></view><view><text>基准日期</text><text class="rule-value">{{ setData.time || '未设置' }}</text></view></view>
+			<text v-if="holidayLoadState === 'error'" class="holiday-load-tip">节假日安排暂未加载，已保留基础农历信息。</text>
+		</view>
+
+		<u-popup v-model="configShow" mode="bottom" round="28" closeable>
+			<view class="config-panel">
+				<view class="panel-heading">
+					<text class="panel-title">轮班设置</text>
+					<text class="panel-description">设置轮班周期和最近一次值班日期，保存后会保留在本机。</text>
 				</view>
-				<view class="item">
-					<text>最近值班日期：</text>
-					<text @click="setletcTime">{{setData.time||""}}</text>
+				<view class="setting-list">
+					<view class="setting-item" hover-class="setting-item--pressed" @click="selectShiftNum">
+						<view>
+							<text class="setting-label">轮班周期</text>
+							<text class="setting-tip">设为 0 时不计算值班日</text>
+						</view>
+						<view class="setting-value"><text>{{ setData.shiftsNum || '未设置' }}</text><u-icon name="arrow-right" color="#c8a4b0" size="24rpx" /></view>
+					</view>
+					<view class="setting-item" hover-class="setting-item--pressed" @click="selectLatestDate">
+						<view>
+							<text class="setting-label">最近值班日期</text>
+							<text class="setting-tip">作为轮班计算的基准日期</text>
+						</view>
+						<view class="setting-value"><text>{{ setData.time || '请选择' }}</text><u-icon name="arrow-right" color="#c8a4b0" size="24rpx" /></view>
+					</view>
 				</view>
-				<view class="submit">
-					<u-button :ripple="true" @click="clearSub" plain size="medium ">清空规则
-					</u-button>
-					<u-button type="red" @click="submit" color="#E56C95" size="medium " style="margin-left: 14rpx;">
-						确认
-					</u-button>
-		
+				<view class="panel-actions">
+					<u-button plain custom-style="border-color:#efbfd0;color:#c9577d;background:#fff7fa;" @click="clearConfig">清空规则</u-button>
+					<u-button type="error" custom-style="margin-left:20rpx;background:#dc6f95;border-color:#dc6f95;" @click="saveConfig">保存设置</u-button>
 				</view>
 			</view>
 		</u-popup>
-		<u-calendar v-model="calendarshow" mode="date" @change="timeChange" border-radius="14px"  active-bg-color="#E56C95"
-		btn-type="red" max-date="2050-01-01"
-		>
-		</u-calendar>
-		<u-select v-model="selectshow" :list="list" @confirm="confirm" mode="single-column" label-name="value">
-		</u-select>
+		<u-calendar v-model="calendarShow" mode="date" active-bg-color="#dc6f95" btn-type="error" max-date="2050-01-01" @change="timeChange" />
+		<u-select v-model="selectShow" :list="shiftOptions" label-name="value" mode="single-column" @confirm="confirm" />
 	</view>
 </template>
 
-<script>
-	import getDate from '@/util/getDate.js';
-	import RlNewItem from './rl-new-item.vue';
-	import {randomPopupTexts} from "@/static/js/popupTexts .js"
-	const defaultConfig = {
-		shiftsNum:0,//轮班天数
-		time:null,
-		timeData:null,
-		timestamp:null
-	}
-	export default {
-		components: {
-			RlNewItem
-		},
-		data() {
-			return {
-				swiperActive: 2,
-				swiperList: [],
-				duration: 500,
-				configShow:false,
-				setData:{...defaultConfig}, //默认配置
-				calendarshow:false,
-				selectshow:false,
-				list:[]
-			};
-		},
-		created() {
-			this.setDefaultConfig()
-			this.init();
-			this.list = Array.from({ length: 31 }, (_, index) => ({
-			    value: index + 1,
-			    label: index + 1
-			}));
-		},
-		onShareAppMessage(res) {
-		    //console.log('onShareAppMessage',res);
-		    return {
-		      title: '私人小日历',
-		      path: '/pages/index/index?share=true',
-		    }
-		  },
-		 
-		//onShareAppMessage {from: "button", target: {…}}
-		methods: {
-			init() {
-				// const nowDate = new getDate(`2023/11/09`)
-				const nowDate = new getDate();
-				this.swiperList = this.updateSwiperList(nowDate,[-2, -1, 0, 1, 2]);
-			},
-			clickDay(datDate){
-				console.log(datDate);
-				uni.showToast({
-					icon:"none",
-					title:randomPopupTexts()
-				})
-				
-			},
-			refreshDate(){
-				let refs = this.$refs.rlItemRef
-				if(refs){
-					for (let i = 0; i < refs.length; i++) {
-						refs[i].init()
-					}
-				}
-			},
-			//确认
-			submit() {
-				uni.setStorageSync('snow-rl-config', {
-					...this.setData
-				});
-				this.refreshDate()
-				uni.showToast({
-					title: "设置成功！",
-				})
-				this.configShow = false;
-			},
-			//清空规则
-			clearSub() {
-				uni.removeStorageSync('snow-rl-config')
-				this.setDefaultConfig()
-				this.refreshDate()
-				wx.showToast({
-					title: "清空成功！",
-				})
-			
-			},
-			setDefaultConfig(){
-				let data = uni.getStorageSync('snow-rl-config');
-				console.log('snow-rl-config',data);
-				if (data) {
-					this.setData = data;
-				} else {
-					this.setData = {
-						...defaultConfig
-					};
-				}
-			},
-			setletcTime() {
-				this.calendarshow = true;
-			},
-			setletcNum() {
-				this.selectshow = true;
-			},
-			//选择日期
-			timeChange(time) {
-				this.setData.time = time.result;
-				this.setData.timeData = time;
-				let timeStr = `${time.year}/${time.month}/${time.day}`
-				this.setData.timestamp = Date.parse(timeStr)
-				console.log(time,this.setData)
-			},
-			confirm(e) {
-				this.setData.shiftsNum = e[0].value;
-			},
-			next(e) {
-				console.log(this.swiperActive);
-				e && e.preventDefault();
-				if (this.swiperActive ==4) {
-					this.swiperActive = 0;
-				} else {
-					this.swiperActive++;
-				}
+<script setup>
+import { ref } from 'vue'
+import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
+import getDate from '@/util/getDate.js'
+import RlNewItem from './rl-new-item.vue'
+import { randomPopupTexts } from '@/util/popupTexts.js'
+import { buildHolidayMap, loadHolidayCalendar } from '@/util/rq.js'
 
-			},
-			prev(e) {
-				console.log(this.swiperActive);
-				e && e.preventDefault();
-				if (this.swiperActive == 0) {
-					this.swiperActive ==4 ;
-				} else {
-					this.swiperActive--;
-				}
-			},
-			updateSwiperList(nowDate,offsets){
-				let newArr = [];
-				for (let i = 0; i < offsets.length; i++) {
-					newArr.push(nowDate.getOffsetMonth(offsets[i]).format);
-				}
-				return newArr
-			},
-			setconfig(){
-				this.configShow =true
-			},
-			//轮播图切换
-			swiperChange(e) {
-				// this.swiperActive = 0
-				this.swiperActive = e.detail.current;
-				const nowDate = new getDate(this.swiperList[this.swiperActive]);
-				const offsetMonths = [-2, -1, 0, 1, 2];
-				let newArr= []
-				if (this.swiperActive === 3) {
-					newArr=this.updateSwiperList(nowDate,[2, -2, -1, 0, 1]);
-				} else if (this.swiperActive === 4) {
-					newArr=this.updateSwiperList(nowDate,[1, 2, -2, -1, 0]);
-				} else if(this.swiperActive === 0){
-					newArr=this.updateSwiperList(nowDate,[0, 1, 2, -2, -1]);
-				} else if(this.swiperActive === 1){
-					newArr=this.updateSwiperList(nowDate,[-1, 0, 1, 2, -2]);
-				} else if(this.swiperActive === 2){
-					newArr=this.updateSwiperList(nowDate,[-2, -1, 0, 1, 2]);
-				}
-				this.swiperList = newArr;
-				console.log(this.swiperList,this.swiperActive, nowDate, this.swiperList[this.swiperActive]);
-			},
-			//动画结束时会触发
-			animationfinish(e) {}
+const defaultConfig = { shiftsNum: 0, time: null, timeData: null, timestamp: null }
+const swiperActive = ref(2)
+const swiperList = ref([])
+const selectedDate = ref(new getDate().dateFormat())
+const selectedDay = ref(null)
+const configShow = ref(false)
+const calendarShow = ref(false)
+const selectShow = ref(false)
+const setData = ref({ ...defaultConfig })
+const holidayMap = ref({})
+const holidayLoadState = ref('idle')
+const attemptedHolidayYears = new Set()
+const shiftOptions = Array.from({ length: 31 }, (_, index) => ({ value: index + 1, label: index + 1 }))
+const duration = 650
+
+const updateSwiperList = (date, offsets) => offsets.map(offset => date.getOffsetMonth(offset).format)
+
+const loadHolidayYears = async dates => {
+	const years = [...new Set(dates.map(date => new getDate(date).getFullYear()))].filter(year => !attemptedHolidayYears.has(year))
+	if (!years.length) return
+	years.forEach(year => attemptedHolidayYears.add(year))
+	holidayLoadState.value = 'loading'
+	const results = await Promise.all(years.map(loadHolidayCalendar))
+	for (const result of results) {
+		holidayMap.value = { ...holidayMap.value, ...buildHolidayMap(result.calendar) }
+	}
+	holidayLoadState.value = results.some(result => result.source !== 'fallback') ? 'ready' : 'error'
+}
+
+const loadConfig = () => {
+	const savedConfig = uni.getStorageSync('snow-rl-config')
+	setData.value = savedConfig ? { ...defaultConfig, ...savedConfig } : { ...defaultConfig }
+}
+
+const init = () => {
+	const today = new getDate()
+	swiperList.value = updateSwiperList(today, [-2, -1, 0, 1, 2])
+	swiperActive.value = 2
+	selectedDate.value = today.dateFormat()
+	selectedDay.value = null
+}
+
+const clickDay = day => {
+	selectedDate.value = `${day.cYear}/${day.cMonth}/${day.cDay}`
+	selectedDay.value = day
+	uni.showToast({ icon: 'none', title: randomPopupTexts() })
+}
+
+const saveConfig = () => {
+	uni.setStorageSync('snow-rl-config', { ...setData.value })
+	configShow.value = false
+	uni.showToast({ title: '设置已保存' })
+}
+
+const clearConfig = () => {
+	uni.showModal({
+		title: '清空轮班规则',
+		content: '清空后将不再计算值班日，是否继续？',
+		success: ({ confirm }) => {
+			if (!confirm) return
+			uni.removeStorageSync('snow-rl-config')
+			setData.value = { ...defaultConfig }
+			uni.showToast({ title: '规则已清空' })
 		}
-	};
+	})
+}
+
+const selectLatestDate = () => { calendarShow.value = true }
+const selectShiftNum = () => { selectShow.value = true }
+const openConfig = () => { configShow.value = true }
+const timeChange = time => {
+	setData.value.time = time.result
+	setData.value.timeData = time
+	setData.value.timestamp = new Date(time.year, time.month - 1, time.day).getTime()
+}
+const confirm = values => { setData.value.shiftsNum = values[0].value }
+
+const next = () => { swiperActive.value = swiperActive.value === 4 ? 0 : swiperActive.value + 1 }
+const prev = () => { swiperActive.value = swiperActive.value === 0 ? 4 : swiperActive.value - 1 }
+const goToday = () => {
+	init()
+	loadHolidayYears(swiperList.value)
+}
+const swiperChange = event => {
+	swiperActive.value = event.detail.current
+	const currentDate = new getDate(swiperList.value[swiperActive.value])
+	const offsetsByIndex = [[0, 1, 2, -2, -1], [-1, 0, 1, 2, -2], [-2, -1, 0, 1, 2], [2, -2, -1, 0, 1], [1, 2, -2, -1, 0]]
+	swiperList.value = updateSwiperList(currentDate, offsetsByIndex[swiperActive.value])
+	loadHolidayYears(swiperList.value)
+}
+
+onLoad(() => {
+	loadConfig()
+	init()
+	loadHolidayYears(swiperList.value)
+})
+
+onShareAppMessage(() => ({
+	title: '私人小日历',
+	path: '/pages/index/index?share=true'
+}))
 </script>
 
 <style lang="scss" scoped>
-	.snow-calendar {
-		min-height: 100vh;
-		background-color: #e56c95;
-		box-sizing: border-box;
-		padding-top: 36rpx;
-	}
-
-	.swiper {
-		height: 100vh;
-	}
-
-	.swiper_item {
-		box-sizing: border-box;
-		padding: 24rpx;
-	
-	}
-
-
-	.addconfig{
-		width: 90rpx;
-		height: 90rpx;
-		// transform: translate(-60rpx,45%);
-		border-radius: 45rpx;
-		overflow: hidden;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		background: #F56C6C;
-		z-index: 99;
-		box-shadow:
-		  4rpx 6rpx 8rpx rgba(0,0,0, 0.205),
-		  4rpx 8rpx 20rpx rgba(0,0,0, 0.4)
-		;
-		position: absolute;
-			right: 60rpx;
-			bottom: -40rpx;
-		}
-	.addWrap {
-		width: 100%;
-		height: 100%;
-		box-sizing: border-box;
-		padding: 16rpx;
-		
-	
-		p {
-			text-align: center;
-			color: #bababa;
-			font-size: 24rpx;
-			margin-bottom: 40rpx;
-		}
-	
-		.item {
-			width: 100%;
-			margin-top: 20rpx;
-			height: 56rpx;
-			line-height: 56rpx;
-			display: flex;
-			font-size: 30rpx;
-			display: flex;
-			justify-content: center;
-	
-			text:first-child {
-				width: 220rpx;
-				color: #D51757;
-			}
-	
-			text:last-child {
-				width: 220rpx;
-				border-bottom: solid 2rpx #E56C95;
-				color: #E56C95;
-				text-indent: 30rpx;
-			}
-		}
-	
-		.submit {
-			width: 70%;
-			margin: 30rpx 0 100rpx 0;
-			margin-left: 15%;
-			display: flex;
-			// align-items: center;
-			// justify-content: center;
-			// box-sizing: border-box;
-		}
-	}
+.snow-calendar { position:relative; min-height:100vh; overflow:hidden; padding:28rpx 24rpx calc(48rpx + env(safe-area-inset-bottom)); background:radial-gradient(circle at 12% 3%,rgba(255,255,255,.96),transparent 25%),radial-gradient(circle at 94% 17%,rgba(243,174,202,.45),transparent 26%),linear-gradient(160deg,#fff8fa 0%,#fbeaf0 48%,#f6dbe6 100%); }
+.background-glow { position:absolute; border-radius:50%; filter:blur(6rpx); opacity:.72; }.glow-one { top:260rpx; left:-190rpx; width:360rpx; height:360rpx; background:rgba(255,198,218,.52); }.glow-two { right:-170rpx; bottom:80rpx; width:390rpx; height:390rpx; background:rgba(231,172,211,.36); }
+.calendar-toolbar { position:relative; z-index:1; display:flex; align-items:center; justify-content:space-between; padding:4rpx 12rpx 26rpx; }
+.toolbar-copy { display:flex; flex-direction:column; min-width:0; }
+.toolbar-title { color:#553440; font-size:42rpx; font-weight:700; letter-spacing:2rpx; }
+.toolbar-subtitle { margin-top:8rpx; color:#aa7f8d; font-size:23rpx; }
+.today-button { padding:13rpx 24rpx; border:1rpx solid #efc2d1; border-radius:30rpx; color:#c9577d; background:rgba(255,255,255,.78); font-size:25rpx; box-shadow:0 6rpx 18rpx rgba(189, 102, 136, .12); }
+.today-button--pressed, .add-config--pressed, .setting-item--pressed { opacity:.72; transform:scale(.98); }
+.swiper { position:relative; z-index:1; height:1000rpx; }
+.swiper-item { padding:8rpx 0 28rpx; }
+.calendar-content { display:block; }
+.calendar-middle-action { position:absolute; right:40rpx; bottom:-42rpx; z-index:2; }
+.calendar-summary { position:relative; z-index:1; margin:0rpx 0 2rpx; padding:24rpx; border:1rpx solid #f6dfe8; border-radius:24rpx; background:linear-gradient(135deg,#fff8fb,#fff); box-shadow:0 10rpx 22rpx rgba(197,110,143,.08); }.summary-heading,.summary-status,.rule-overview { display:flex; align-items:center; justify-content:space-between; }.summary-heading > view { flex:1; min-width:0; }.summary-title,.summary-subtitle { display:block; }.summary-title { color:#643f4c; font-size:28rpx; font-weight:700; }.summary-subtitle { overflow:hidden; margin-top:6rpx; color:#b18b98; font-size:21rpx; text-overflow:ellipsis; white-space:nowrap; }.summary-date { flex:none; margin-left:16rpx; padding:7rpx 13rpx; border-radius:20rpx; color:#c95d83; background:#fff0f5; font-size:22rpx; }.summary-status { margin-top:18rpx; justify-content:flex-start; gap:12rpx; }.summary-lunar { overflow:hidden; max-width:56%; color:#8e6875; font-size:24rpx; text-overflow:ellipsis; white-space:nowrap; }.status-pill { padding:7rpx 14rpx; border-radius:18rpx; font-size:21rpx; }.status-pill.is-duty { color:#c9577d; background:#fff0f4; }.status-pill.is-vacation { color:#318764; background:#eff9f4; }.status-pill.is-workday { color:#61708d; background:#f2f3f8; }.status-pill.is-normal { color:#a97989; background:#faeff3; }.summary-empty { display:flex; align-items:center; gap:12rpx; min-height:58rpx; margin-top:16rpx; color:#aa8792; font-size:22rpx; line-height:1.5; }.rule-overview { gap:18rpx; margin-top:20rpx; padding-top:18rpx; border-top:1rpx dashed #f3dbe4; }.rule-overview view { display:flex; flex:1; flex-direction:column; min-width:0; }.rule-overview text { color:#bd98a4; font-size:20rpx; }.rule-overview .rule-value { overflow:hidden; margin-top:5rpx; color:#80505f; font-size:23rpx; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
+.add-config { display:flex; align-items:center; justify-content:center; width:82rpx; height:82rpx; border:6rpx solid #fff6f8; border-radius:50%; background:linear-gradient(135deg,#ef8cad,#d95f87); box-shadow:0 12rpx 26rpx rgba(183,71,111,.28); transition:transform .2s,opacity .2s; }
+.config-panel { padding:48rpx 32rpx calc(40rpx + env(safe-area-inset-bottom)); background:#fffafb; }
+.panel-heading { display:flex; flex-direction:column; padding-right:64rpx; }
+.panel-title { color:#51323e; font-size:38rpx; font-weight:700; }
+.panel-description { margin-top:14rpx; color:#a6818c; font-size:25rpx; line-height:1.6; }
+.setting-list { margin-top:34rpx; overflow:hidden; border:1rpx solid #f4dce4; border-radius:24rpx; background:#fff; }
+.setting-item { display:flex; align-items:center; justify-content:space-between; min-height:132rpx; padding:22rpx 24rpx; transition:transform .2s,opacity .2s; }
+.setting-item + .setting-item { border-top:1rpx solid #f8e8ed; }
+.setting-label, .setting-tip { display:block; }.setting-label { color:#543540; font-size:29rpx; font-weight:600; }.setting-tip { margin-top:7rpx; color:#b69aa4; font-size:22rpx; }
+.setting-value { display:flex; align-items:center; gap:8rpx; max-width:48%; color:#c9577d; font-size:27rpx; }.setting-value text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.panel-actions { display:flex; margin-top:34rpx; }
+.holiday-load-tip { display:block; margin-top:16rpx; color:#bd98a4; font-size:20rpx; line-height:1.5; }
 </style>

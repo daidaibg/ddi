@@ -1,79 +1,30 @@
 <template>
-	<div class="time_wrap_list" :style="wrapStyle">
-		<div class="noAnimationFilpper" v-for="i in frontText.length" :key="i">
-			<div class="noAnimationFilpperitem">{{ frontText[i] }}</div>
-		</div>
-	</div>
+	<view class="time_wrap_list" :style="wrapStyle">
+		<view class="noAnimationFilpper" v-for="(item, index) in frontTextList" :key="index">
+			<view class="noAnimationFilpperitem">{{ item }}</view>
+		</view>
+	</view>
 </template>
 
-<script>
-export default {
-	name: 'noAnimationFilpper',
-	data() {
-		return {};
-	},
-	props: {
-		// front paper text
-		// 前牌文字
+<script setup>
+	import { computed } from 'vue'
+
+	const props = defineProps({
 		frontText: {
-			type: [ String],
-			default: "00"
+			type: [String, Number],
+			default: '00'
 		}
-	},
-	computed:{
-		wrapStyle(){
-			return `grid-template-columns:repeat(${this.frontText.length}, 1fr);`
-		}
-	},
-	methods: {
-		_textClass(number) {
-			return 'number' + number;
-		},
-		_flip(type, front, back) {
-			// 如果处于翻转中，则不执行
-			if (this.isFlipping) {
-				return false;
-			}
-			this.frontTextFromData = front;
-			this.backTextFromData = back;
-			// 根据传递过来的type设置翻转方向
-			this.flipType = type;
-			// 设置翻转状态为true
-			this.isFlipping = true;
-			setTimeout(() => {
-				// 设置翻转状态为false
-				this.isFlipping = false;
-				this.frontTextFromData = back;
-			}, this.duration);
-		},
-		// 下翻牌
-		flipDown(front, back) {
-			this._flip('down', front, back);
-		},
-		// 上翻牌
-		flipUp(front, back) {
-			this._flip('up', front, back);
-		},
-		// 设置前牌文字
-		setFront(text) {
-			this.frontTextFromData = text;
-		},
-		// 设置后牌文字
-		setBack(text) {
-			this.backTextFromData = text;
-		}
-	},
-	created() {
-		this.frontTextFromData = this.frontText;
-		this.backTextFromData = this.backText;
-	}
-};
+	})
+
+	const frontTextList = computed(() => Array.from(String(props.frontText)))
+	const wrapStyle = computed(() => `grid-template-columns: repeat(${frontTextList.value.length}, 1fr);`)
 </script>
 
 <style scoped lang="scss">
 .time_wrap_list {
 	display: grid;
 	column-gap: 6rpx;
+	flex-shrink: 0;
 }
 .noAnimationFilpper {
 	display: inline-block;
@@ -83,6 +34,7 @@ export default {
 	line-height: 100rpx;
 	border: solid 1rpx #000;
 	border-radius: 12rpx;
+	box-sizing: border-box;
 	font-size: 80rpx;
 	color: #fff;
 	box-shadow: 0 0 6rpx rgba(0, 0, 0, 0.5);
@@ -91,7 +43,10 @@ export default {
 	font-family: 'DS-DIGI';
 	overflow: hidden;
 	background: #000;
+	flex-shrink: 0;
 }
 .noAnimationFilpperitem {
+	width: 100%;
+	height: 100%;
 }
 </style>

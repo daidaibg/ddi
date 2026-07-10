@@ -12,6 +12,7 @@
 		},
 		methods:{
 			autoUpdate() {
+				// #ifdef MP-WEIXIN
 				var self = this
 				// 获取小程序更新机制兼容
 				if (wx.canIUse('getUpdateManager')) {
@@ -32,6 +33,7 @@
 						content: '当前微信版本过低，无法使用该功能，请升级到最新微信版本后重试。'
 					})
 				}
+				// #endif
 			},
 			/**
 			 * 下载小程序新版本并重启应用
@@ -58,14 +60,24 @@
 </script>
 
 <style lang="scss">
-	@import "uview-ui/index.scss";
+	@import "@/uni_modules/uview-pro/index.scss";
 	@font-face {
 		font-family: 'DS-DIGI';
 		src: url('./static/font/DS-DIGI.ttf');
 	}
-	* {
-		margin: 0;
-		padding: 0;
+	page,
+	view,
+	text,
+	image,
+	button,
+	input,
+	textarea,
+	scroll-view,
+	swiper,
+	swiper-item {
+	    margin: 0;
+	    padding: 0;
+	    box-sizing: border-box;
 	}
 	
 	body {

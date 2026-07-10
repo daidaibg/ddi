@@ -2,13 +2,13 @@
 	<view class="loading_wrap">
 		<scroll-view class='goods_list' :scroll-y="true" :scroll-with-animation="true" @refresherrefresh="onRefresh"
 			:lower-threshold="60" :refresher-enabled='true' :refresher-triggered="triggered"
-			refresher-default-style="none" :refresher-threshold="60" refresher-background="#2789FF"
+			refresher-default-style="none" :refresher-threshold="60" refresher-background="transparent"
 			style="height: 100vh;" @scrolltolower="loadMore">
 			<view slot="refresher" class="refresh-container"
-				style="width: 100%; height: 60px;  display: flex; align-items: center;justify-content: center;color:#FFF">
+				style="width: 100%; height: 60px;  display: flex; align-items: center;justify-content: center;color:#64748b">
 				<view class="loading_content" >
 					<image src="/static/img/bb.png" mode="" style="width: 40rpx;height: 40rpx;" class="loading_img"></image>
-					<text style="color: #F3F4F6;
+					<text style="color: #64748b;
 				font-size: 26rpx;">{{loadingText}}</text>
 				</view>
 			</view>

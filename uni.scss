@@ -13,13 +13,23 @@
  */
 
 /* 颜色变量 */
-@import 'uview-ui/theme.scss';
+@import '@/uni_modules/uview-pro/theme.scss';
 /* 行为相关颜色 */
 $uni-color-primary: #007aff;
 $uni-color-success: #4cd964;
 $uni-color-warning: #f0ad4e;
 $uni-color-error: #dd524d;
 $uni-color-red: #E56C95;
+page {
+	--u-type-error: #E56C95;
+	--u-type-error-rgb: 229, 108, 149;
+	--u-type-error-dark: #D51757;
+	--u-type-error-dark-rgb: 213, 23, 87;
+	--u-type-error-light: #fff1f2;
+	--u-type-error-light-rgb: 255, 241, 242;
+	--u-type-error-disabled: #f4b6cb;
+	--u-type-error-disabled-rgb: 244, 182, 203;
+}
 .u-btn--red{
 	background-color:$uni-color-red ;
 	color: #fff;

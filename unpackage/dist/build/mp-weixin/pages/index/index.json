@@ -1,9 +1,11 @@
 {
-  "navigationBarTitleText": "呆呆bug",
+  "navigationBarTitleText": "呆呆工具箱",
   "enablePullDownRefresh": false,
-  "disableScroll": true,
+  "disableScroll": false,
+  "navigationBarBackgroundColor": "#0052d9",
+  "backgroundColorTop": "#0052d9",
+  "backgroundColorBottom": "#f4f7ff",
   "usingComponents": {
-    "u-swiper": "/node-modules/uview-ui/components/u-swiper/u-swiper",
-    "refresh": "/components/Refresh/Refresh/Refresh"
+    "refresh": "../../components/Refresh/Refresh/Refresh"
   }
 }

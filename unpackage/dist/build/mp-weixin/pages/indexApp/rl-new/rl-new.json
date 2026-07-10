@@ -5,11 +5,11 @@
   "backgroundColorTop": "#E56C95",
   "backgroundColorBottom": "#E56C95",
   "usingComponents": {
-    "u-icon": "/node-modules/uview-ui/components/u-icon/u-icon",
-    "u-popup": "/node-modules/uview-ui/components/u-popup/u-popup",
-    "u-button": "/node-modules/uview-ui/components/u-button/u-button",
-    "u-calendar": "/node-modules/uview-ui/components/u-calendar/u-calendar",
-    "u-select": "/node-modules/uview-ui/components/u-select/u-select",
-    "rl-new-item": "/pages/indexApp/rl-new/rl-new-item"
+    "rl-new-item": "./rl-new-item",
+    "u-icon": "../../../uni_modules/uview-pro/components/u-icon/u-icon",
+    "u-button": "../../../uni_modules/uview-pro/components/u-button/u-button",
+    "u-popup": "../../../uni_modules/uview-pro/components/u-popup/u-popup",
+    "u-calendar": "../../../uni_modules/uview-pro/components/u-calendar/u-calendar",
+    "u-select": "../../../uni_modules/uview-pro/components/u-select/u-select"
   }
 }

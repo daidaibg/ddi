@@ -3,16 +3,15 @@
     "pages/index/index",
     "pages/indexApp/xkt/xkt",
     "pages/indexApp/rl-new/rl-new",
-    "pages/indexApp/jjr/jjr",
-    "pages/indexApp/djs/djs"
+    "pages/indexApp/djs/djs",
+    "pages/indexApp/kaipao-equipment-entries/kaipao-equipment-entries"
   ],
-  "subPackages": [],
   "window": {
     "navigationBarTextStyle": "white",
-    "navigationBarTitleText": "呆呆bug",
-    "navigationBarBackgroundColor": "#2789FF",
-    "backgroundColorTop": "#2789FF",
-    "backgroundColorBottom": "#F6F9FA"
+    "navigationBarTitleText": "呆呆工具箱",
+    "navigationBarBackgroundColor": "#0052d9",
+    "backgroundColorTop": "#0052d9",
+    "backgroundColorBottom": "#f4f7ff"
   },
   "entryPagePath": "pages/index/index",
   "permission": {

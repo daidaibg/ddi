@@ -1,0 +1,4 @@
+.codex/skills/simplify/
+node_modules/
+dist/
+unpackage/dev-h5.*.log

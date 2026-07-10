@@ -1,0 +1,188 @@
+page {
+    color: $u-main-color;
+    font-size: 28rpx;
+}
+
+/* start--去除webkit的默认样式--start */
+.u-fix-ios-appearance {
+    -webkit-appearance: none;
+}
+/* end--去除webkit的默认样式--end */
+
+/* start--icon图标外层套一个view，让其达到更好的垂直居中的效果--start */
+.u-icon-wrap {
+    display: flex;
+    align-items: center;
+}
+/* end-icon图标外层套一个view，让其达到更好的垂直居中的效果--end */
+
+/* start--iPhoneX底部安全区定义--start */
+@each $d in top, right, bottom, left {
+    .safe-area-inset-#{$d} {
+        padding-#{$d}: 0;
+        padding-#{$d}: constant(safe-area-inset-#{$d});
+        padding-#{$d}: env(safe-area-inset-#{$d});
+    }
+}
+/* end-iPhoneX底部安全区定义--end */
+
+/* start--各种hover点击反馈相关的类名-start */
+.u-hover-class {
+    // background-color: #f7f8f9!important;
+    opacity: 0.6;
+}
+
+.u-cell-hover {
+    background-color: $u-bg-gray-light !important;
+}
+/* end--各种hover点击反馈相关的类名--end */
+
+/* start--文本行数限制--start */
+// 超出行数，自动显示行尾省略号，最多5行
+// 来自uView的温馨提示：当您在控制台看到此报错，说明需要在App.vue的style标签加上【lang="scss"】
+@for $i from 1 through 5 {
+    .u-line-#{$i} {
+        /* #ifdef APP-NVUE */
+        // nvue下，可以直接使用lines属性，这是weex特有样式
+        lines: $i;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        flex: 1;
+        /* #endif */
+
+        /* #ifndef APP-NVUE */
+        // vue下，单行和多行显示省略号需要单独处理
+        @if $i == 1 {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        } @else {
+            display: -webkit-box;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: break-all;
+            -webkit-line-clamp: $i;
+            -webkit-box-orient: vertical;
+        }
+        /* #endif */
+    }
+}
+
+.u-line-force {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+}
+
+/* end--文本行数限制--end */
+
+/* start--Retina 屏幕下的 1px 边框--start */
+.u-border,
+.u-border-bottom,
+.u-border-left,
+.u-border-right,
+.u-border-top,
+.u-border-top-bottom {
+    position: relative;
+}
+
+.u-border-bottom:after,
+.u-border-left:after,
+.u-border-right:after,
+.u-border-top-bottom:after,
+.u-border-top:after,
+.u-border:after {
+    /* #ifndef APP-NVUE */
+    content: ' ';
+    /* #endif */
+    position: absolute;
+    left: 0;
+    top: 0;
+    pointer-events: none;
+    box-sizing: border-box;
+    -webkit-transform-origin: 0 0;
+    transform-origin: 0 0;
+    // 多加0.1%，能解决有时候边框缺失的问题
+    width: 199.8%;
+    height: 199.7%;
+    transform: scale(0.5, 0.5);
+    border: 0 solid $u-border-color;
+    z-index: 2;
+}
+
+.u-border-top:after {
+    border-top-width: 1px;
+}
+
+.u-border-left:after {
+    border-left-width: 1px;
+}
+
+.u-border-right:after {
+    border-right-width: 1px;
+}
+
+.u-border-bottom:after {
+    border-bottom-width: 1px;
+}
+
+.u-border-top-bottom:after {
+    border-width: 1px 0;
+}
+
+.u-border:after {
+    border-width: 1px;
+}
+/* end--Retina 屏幕下的 1px 边框--end */
+
+/* start--clearfix--start */
+.u-clearfix:after,
+.clearfix:after {
+    /* #ifndef APP-NVUE */
+    content: '';
+    /* #endif */
+    display: table;
+    clear: both;
+}
+/* end--clearfix--end */
+
+/* start--高斯模糊tabbar底部处理--start */
+.u-blur-effect-inset {
+    width: 750rpx;
+    height: var(--window-bottom);
+    background-color: #ffffff;
+}
+/* end--高斯模糊tabbar底部处理--end */
+
+/* start--提升H5端uni.toast()的层级，避免被uView的modal等遮盖--start */
+/* #ifdef H5 */
+uni-toast {
+    z-index: 10090;
+}
+uni-toast .uni-toast {
+    z-index: 10090;
+}
+/* #endif */
+/* end--提升H5端uni.toast()的层级，避免被uView的modal等遮盖--end */
+
+/* start--去除button的所有默认样式--start */
+// 去除button的所有默认样式，让其表现跟普通的view、text元素一样
+.u-reset-button {
+    padding: 0;
+    margin: 0;
+    background-color: transparent;
+    /* #ifndef APP-PLUS */
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
+    /* #endif */
+    /* #ifdef APP-NVUE */
+    border-width: 0;
+    /* #endif */
+}
+
+/* #ifndef APP-NVUE */
+.u-reset-button::after {
+    border: none;
+}
+/* #endif */
+/* end--去除button的所有默认样式--end */

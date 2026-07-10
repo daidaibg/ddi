@@ -6,6 +6,6 @@
   "backgroundColorBottom": "#607995",
   "navigationStyle": "custom",
   "usingComponents": {
-    "flipper": "/components/flipper/noAnimationFilpper"
+    "flipper": "../../../components/flipper/noAnimationFilpper"
   }
 }

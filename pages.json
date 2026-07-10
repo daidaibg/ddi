@@ -1,45 +1,41 @@
 {
 	"easycom": {
-		"^u-(.*)": "uview-ui/components/u-$1/u-$1.vue"
+		"autoscan": true,
+		"custom": {
+			"^u-(.*)": "@/uni_modules/uview-pro/components/u-$1/u-$1.vue"
+		}
 	},
 	"entryPagePath": "pages/index/index",
-	"pages": [{
+	"pages": [
+		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "呆呆bug",
+				"navigationBarTitleText": "呆呆工具箱",
 				"enablePullDownRefresh": false,
-				"disableScroll": true
+				"disableScroll": false,
+				"navigationBarBackgroundColor": "#0052d9",
+				"backgroundColorTop": "#0052d9",
+				"backgroundColorBottom": "#f4f7ff"
 			}
-		}
-
-		, {
+		},
+		{
 			"path": "pages/indexApp/xkt/xkt",
 			"style": {
 				"navigationBarTitleText": "",
 				"enablePullDownRefresh": false
 			}
-
-		}
-		, {
+		},
+		{
 			"path": "pages/indexApp/rl-new/rl-new",
 			"style": {
 				"navigationBarTitleText": "私人小日历",
 				"enablePullDownRefresh": false,
-				"navigationBarBackgroundColor": "#E56C95",
-				"backgroundColorTop": "#E56C95",
-				"backgroundColorBottom": "#E56C95"
+				"navigationBarBackgroundColor": "#fbeaf0",
+				"backgroundColorTop": "#fbeaf0",
+				"backgroundColorBottom": "#fbeaf0"
 			}
-
-		}
-
-		, {
-			"path": "pages/indexApp/jjr/jjr",
-			"style": {
-				"navigationBarTitleText": "",
-				"enablePullDownRefresh": false
-			}
-
-		}, {
+		},
+		{
 			"path": "pages/indexApp/djs/djs",
 			"style": {
 				"navigationBarTitleText": "",
@@ -48,23 +44,24 @@
 				"backgroundColorTop": "#607995",
 				"backgroundColorBottom": "#607995",
 				"navigationStyle": "custom"
-
+			}
+		},
+		{
+			"path": "pages/indexApp/kaipao-equipment-entries/kaipao-equipment-entries",
+			"style": {
+				"navigationBarTitleText": "装备词条表",
+				"enablePullDownRefresh": false,
+				"navigationBarBackgroundColor": "#1769e0",
+				"backgroundColorTop": "#1769e0",
+				"backgroundColorBottom": "#f4f7ff"
 			}
 		}
 	],
 	"globalStyle": {
-		"navigationBarTextStyle": "#FFFFFF",
-		"navigationBarTitleText": "呆呆bug",
-		"navigationBarBackgroundColor": "#2789FF",
-		"backgroundColorTop": "#2789FF",
-		"backgroundColorBottom": "#F6F9FA"
-	},
-	"condition": { //模式配置，仅开发期间生效
-		"current": 0, //当前激活的模式(list 的索引项)
-		"list": [{
-			"name": "日历", //模式名称
-			"path": "/pages/indexApp/rl/rl", //启动页面，必选
-			"query": "" //启动参数，在页面的onLoad函数里面得到
-		}]
+		"navigationBarTextStyle": "white",
+		"navigationBarTitleText": "呆呆工具箱",
+		"navigationBarBackgroundColor": "#0052d9",
+		"backgroundColorTop": "#0052d9",
+		"backgroundColorBottom": "#f4f7ff"
 	}
 }

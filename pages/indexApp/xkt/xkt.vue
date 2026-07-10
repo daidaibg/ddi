@@ -101,18 +101,24 @@
 				obeyMuteSwitch:false
 			})
 			this.audioCtx =wx.createInnerAudioContext()
-			this.audioCtx.src = 'http://www.daidaibg.com/statics/audio/di.mp3';
+			this.audioCtx.src = 'https://www.gaobug.com/img/static/xcx/audio/di.mp3';
 			this.audioBackground =wx.createInnerAudioContext()
-			this.audioBackground.src = 'http://www.daidaibg.com/statics/audio/air-extractor-fan.mp3';
+			this.audioBackground.src = 'https://www.gaobug.com/img/static/xcx/audio/air-extractor-fan.mp3';
 			this.audioBackground.loop =true;
 			this.audioOpen =wx.createInnerAudioContext()
-			this.audioOpen.src = 'http://www.daidaibg.com/statics/audio/ac-work.mp3';
+			this.audioOpen.src = 'https://www.gaobug.com/img/static/xcx/audio/ac-work.mp3';
 			
 		},
 		onUnload(){
-			this.audioCtx.destroy()
-			this.audioBackground.destroy()
-			this.audioOpen.destroy()
+			if (this.audioCtx && typeof this.audioCtx.destroy === 'function') {
+				this.audioCtx.destroy()
+			}
+			if (this.audioBackground && typeof this.audioBackground.destroy === 'function') {
+				this.audioBackground.destroy()
+			}
+			if (this.audioOpen && typeof this.audioOpen.destroy === 'function') {
+				this.audioOpen.destroy()
+			}
 		},
 		methods: {
 			switchMode(type) {

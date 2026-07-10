@@ -1,0 +1,189 @@
+<template>
+    <view :class="['u-config-provider', `u-theme-${darkMode}`, customClass]" :style="mergedThemeStyle">
+        <slot />
+    </view>
+</template>
+
+<script lang="ts">
+/**
+ * u-config-provider
+ *
+ * 说明（简要）：
+ * - 初始化场景（推荐在应用入口执行）：使用 `useTheme().initTheme(themes)` 进行一次性初始化与全局设置（例如在 `main.ts` 或 `App.vue` 中）。
+ * - 组件/页面场景（推荐）：使用 `useTheme()` 组合式函数在组件内部读取响应式 `currentTheme`、`themes`、`darkMode` 并通过 `setTheme()` 和 `setDarkMode()` 切换主题/模式。
+ *
+ * 该组件的行为：
+ * - 如果在挂载时传入 `themes`，会调用 `configProvider.initTheme(themes)`
+ * - 如果传入 `currentTheme`，会优先设置当前主题
+ * - 如果传入 `darkMode`，会设置当前的暗黑模式状态，同时在 document 上添加 `u-theme-dark` 或 `u-theme-light` 类名
+ *
+ * 详尽说明请参考：`docs/config-provider-usage.md`
+ */
+export default {
+    name: 'u-config-provider',
+    options: {
+        addGlobalClass: true,
+        // #ifndef MP-TOUTIAO
+        virtualHost: true,
+        // #endif
+        styleIsolation: 'shared'
+    }
+};
+</script>
+
+<script lang="ts" setup>
+import { computed, watch, onMounted } from 'vue';
+import { ConfigProviderProps } from './types';
+import { $u, configProvider } from '../../libs';
+import { useTheme } from '../../libs/hooks/useTheme';
+import { useLocale } from '../../libs/hooks/useLocale';
+
+const props = defineProps(ConfigProviderProps);
+
+const emit = defineEmits<{
+    'theme-change': [themeName: string];
+    'mode-change': [mode: 'light' | 'dark'];
+}>();
+
+// 计算当前的主题模式（亮色/暗黑）
+const darkMode = computed(() => (configProvider.isInDarkMode() ? 'dark' : 'light'));
+
+const bootstrapTheme = () => {
+    // 如果已经初始化过主题，不再重复初始化，只更新 props 相关配置
+    const existingThemes = configProvider.getThemes();
+    if (existingThemes.length > 0) {
+        // 已初始化，只更新当前主题和暗黑模式
+        if (props.currentTheme) {
+            configProvider.setTheme(props.currentTheme as string);
+        }
+        if (props.darkMode) {
+            configProvider.setDarkMode(props.darkMode);
+        }
+        return;
+    }
+
+    // 未初始化，进行初始化
+    if (props.themes && props.themes.length) {
+        configProvider.initTheme(props.themes, props.currentTheme as any);
+    } else {
+        // 使用 useTheme 的 initTheme，它会处理默认主题
+        const { initTheme } = useTheme();
+        initTheme(undefined, props.currentTheme as any);
+    }
+
+    if (props.currentTheme) {
+        configProvider.setTheme(props.currentTheme as string);
+    }
+    if (props.darkMode) {
+        configProvider.setDarkMode(props.darkMode);
+    }
+};
+
+const bootstrapLocale = () => {
+    // 初始化国际化
+    try {
+        const { initLocales, setLocale, getLocales } = useLocale();
+        const existingLocales = getLocales();
+        if (existingLocales.length > 0) {
+            if (props.currentLocale) {
+                setLocale(props.currentLocale as string);
+            }
+        } else {
+            if (props.locales && props.locales.length) {
+                initLocales(props.locales, props.currentLocale as any);
+            } else {
+                initLocales(undefined, props.currentLocale as any);
+            }
+        }
+    } catch (e) {
+        console.warn('[u-config-provider] init locales failed', e);
+    }
+};
+
+// 当传入自定义 themes 时，初始化全局 configProvider（覆盖已有）
+onMounted(() => {
+    bootstrapTheme();
+    bootstrapLocale();
+});
+
+// 监听外部 props 变化（如果上层修改 prop）
+watch(
+    () => props.themes,
+    val => {
+        // 如果传入的 themes 来自于 configProvider 自身（常见于模板中使用 useTheme() 直接透传），
+        // 那么对其做深度监听会在我们内部更新主题对象时触发该回调，进而再次调用 init 导致循环更新。
+        // 为避免该情况，先做简单保护：当传入对象正是 configProvider.themesRef.value 时不重复初始化。
+        if (val && val.length && val !== configProvider.themesRef.value) {
+            configProvider.initTheme(val, props.currentTheme as any);
+        }
+    },
+    { deep: true }
+);
+
+watch(
+    () => props.currentTheme,
+    val => {
+        if (val) {
+            configProvider.setTheme(val);
+        }
+    }
+);
+
+watch(
+    () => props.darkMode,
+    val => {
+        if (val && val !== configProvider.getDarkMode()) {
+            configProvider.setDarkMode(val);
+            emit('mode-change', darkMode.value);
+        }
+    }
+);
+
+// 监听 locales prop 变化
+watch(
+    () => props.locales,
+    val => {
+        if (val && val.length) {
+            const { initLocales } = useLocale();
+            initLocales(val, props.currentLocale as any);
+        }
+    },
+    { deep: true }
+);
+
+watch(
+    () => props.currentLocale,
+    val => {
+        if (val) {
+            const { setLocale } = useLocale();
+            setLocale(val);
+        }
+    }
+);
+
+// 监听全局主题变更并触发事件
+watch(
+    () => configProvider.currentThemeRef.value,
+    (val, oldVal) => {
+        if (val && val.name !== (oldVal as any)?.name) {
+            emit('theme-change', val.name);
+        }
+    },
+    { immediate: true }
+);
+
+// 监听暗黑模式变更并触发事件
+watch(
+    () => configProvider.darkModeRef.value,
+    () => {
+        emit('mode-change', darkMode.value);
+    }
+);
+
+// 计算合并样式（作为局部 fallback），configProvider 已经会把变量注入到 document 上
+const mergedThemeStyle = computed(() => {
+    return $u.toStyle(configProvider.cssVarsRef.value, props.customStyle);
+});
+</script>
+
+<style lang="scss" scoped></style>

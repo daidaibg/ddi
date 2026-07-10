@@ -1,0 +1,32 @@
+/**
+ * 组件库 z-index 配置项类型定义
+ */
+export interface ZIndexConfig {
+    toast: number;
+    noNetwork: number;
+    /** popup包含popup，actionSheet，keyboard，picker的值 */
+    popup: number;
+    mask: number;
+    navbar: number;
+    topTips: number;
+    sticky: number;
+    indexListSticky: number;
+    tabbar: number;
+    dropdown: number;
+}
+
+const zIndex: ZIndexConfig = {
+    toast: 10090,
+    noNetwork: 10080,
+    // popup包含popup，actionSheet，keyboard，picker的值
+    popup: 10075,
+    mask: 10070,
+    navbar: 980,
+    topTips: 975,
+    sticky: 970,
+    indexListSticky: 965,
+    tabbar: 998,
+    dropdown: 985
+};
+
+export default zIndex;

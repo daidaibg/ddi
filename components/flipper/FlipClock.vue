@@ -2,7 +2,7 @@
   <view class="FlipClock">
     <Flipper ref="flipperHour1" />
     <Flipper ref="flipperHour2" />
-    <text>:<text>
+    <text>:</text>
     <Flipper ref="flipperMinute1" />
     <Flipper ref="flipperMinute2" />
     <text>:</text>
