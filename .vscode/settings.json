@@ -1,0 +1,7 @@
+{
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    {
+      "text": "生成 Git Commit Message 时使用简体中文。单个改动只输出一行，格式为 type: 简短描述。多个改动时第一行输出 type: 简短总体描述，下面每行用 - 简短描述一个改动点。type 仅使用 feat、fix、docs、style、refactor、test、chore。不要输出解释、标题或代码块。"
+    }
+  ]
+}

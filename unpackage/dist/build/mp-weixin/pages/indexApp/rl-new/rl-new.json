@@ -1,15 +1,15 @@
 {
   "navigationBarTitleText": "私人小日历",
   "enablePullDownRefresh": false,
-  "navigationBarBackgroundColor": "#E56C95",
-  "backgroundColorTop": "#E56C95",
-  "backgroundColorBottom": "#E56C95",
+  "navigationBarBackgroundColor": "#fbeaf0",
+  "backgroundColorTop": "#fbeaf0",
+  "backgroundColorBottom": "#fbeaf0",
   "usingComponents": {
-    "rl-new-item": "./rl-new-item",
     "u-icon": "../../../uni_modules/uview-pro/components/u-icon/u-icon",
     "u-button": "../../../uni_modules/uview-pro/components/u-button/u-button",
     "u-popup": "../../../uni_modules/uview-pro/components/u-popup/u-popup",
     "u-calendar": "../../../uni_modules/uview-pro/components/u-calendar/u-calendar",
-    "u-select": "../../../uni_modules/uview-pro/components/u-select/u-select"
+    "u-select": "../../../uni_modules/uview-pro/components/u-select/u-select",
+    "rl-new-item": "./rl-new-item"
   }
 }
