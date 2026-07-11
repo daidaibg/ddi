@@ -1,17 +1,15 @@
-﻿<template>
+<template>
   <view class="equipment-page">
-	<view class="save-warning">
-	  <text class="save-warning-icon">⚠️</text>
-	  <text>本地配置优先，其次读取云端配置，最后使用默认配置。</text>
-	</view>
     <view class="save-warning">
-      <text class="save-warning-icon">⚠️</text>
-      <text>每次编辑完成后，请记得手动点击“保存”。</text>
-    </view>
-
-    <view v-if="openidLoading || openidError" class="openid-status" :class="{ error: openidError }">
-      <text>{{ openidLoading ? 'openid 获取中...' : openidError }}</text>
-      <button v-if="openidError && !openidLoading" class="openid-retry" @tap="retryGetOpenid">重新获取 openid</button>
+		<view class="save-warning-item">
+				<text class="save-warning-icon">⚠️</text>
+				<text>每次编辑完成后，请记得手动点击“保存”。</text>
+		</view>
+  	<view  class="save-warning-item">
+		<text class="save-warning-icon">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</text>
+		<text>本地配置优先，其次读取云端配置，最后使用默认配置。</text>
+	</view>
+	 
     </view>
 
     <view class="sticky-action-panel">
@@ -26,7 +24,7 @@
               @change="handleShowFullNameChange"
             />
           </view>
-          <button class="toolbar-btn cloud" :disabled="state.syncing || openidLoading" @tap="useCloudConfig">
+          <button class="toolbar-btn cloud" :disabled="state.syncing" @tap="useCloudConfig">
             <u-icon name="server-fill" color="currentColor" size="30rpx"></u-icon>
             <text>云端配置</text>
           </button>
@@ -45,7 +43,7 @@
             <u-icon name="eye-off" color="currentColor" size="30rpx"></u-icon>
             <text>已忽略</text>
           </button>
-          <button v-if="!state.isEditing" class="toolbar-btn edit" :disabled="state.syncing || openidLoading" @tap="startEditMode">
+          <button v-if="!state.isEditing" class="toolbar-btn edit" :disabled="state.syncing" @tap="startEditMode">
             <u-icon name="edit-pen" color="currentColor" size="30rpx"></u-icon>
             <text>编辑</text>
           </button>
@@ -53,7 +51,7 @@
             <u-icon name="close" color="currentColor" size="30rpx"></u-icon>
             <text>取消</text>
           </button>
-          <button class="toolbar-btn save" :class="{ active: state.hasUnsavedChanges }" :disabled="state.syncing || openidLoading" @tap="handleSave">
+          <button class="toolbar-btn save" :class="{ active: state.hasUnsavedChanges }" :disabled="state.syncing" @tap="handleSave">
             <u-icon name="checkmark" color="currentColor" size="30rpx"></u-icon>
             <text>保存</text>
           </button>
@@ -207,10 +205,9 @@ import {
   sanitizeIgnoredEntryIds,
   saveEquipmentEntryRows,
   saveEquipmentEntrySettings,
-  OPENID_STORAGE_KEY,
-  USER_SESSION_STORAGE_KEY,
 } from './equipment-settings-storage.js';
 import { baseVar } from '../../../util/http.js';
+import { ensureOpenid as ensureAppOpenid } from '../../../util/openid.js';
 
 onShareAppMessage(() => ({ 
 	title: '开炮装备词条',
@@ -243,8 +240,6 @@ const entryPopupVisible = ref(false);
 const ignoredManagerVisible = ref(false);
 const previewVisible = ref(false);
 const openid = ref('');
-const openidLoading = ref(false);
-const openidError = ref('');
 const allowBackWithoutPrompt = ref(false);
 const state = reactive({
   isEditing: false,
@@ -424,76 +419,9 @@ async function loadInitialConfig() {
   }
 }
 
-function getCachedOpenid() {
-  const cachedOpenid = uni.getStorageSync(OPENID_STORAGE_KEY);
-  if (cachedOpenid) return cachedOpenid;
-  const legacySession = uni.getStorageSync(USER_SESSION_STORAGE_KEY);
-  return (legacySession && legacySession.openid) || '';
-}
-
-function ensureOpenid(force = false) {
-  if (!force) {
-    const cachedOpenid = getCachedOpenid();
-    if (cachedOpenid) {
-      openid.value = cachedOpenid;
-      openidError.value = '';
-      return Promise.resolve(cachedOpenid);
-    }
-  }
-  if (openidLoading.value) return Promise.resolve('');
-
-  openidLoading.value = true;
-  openidError.value = '';
-  return new Promise((resolve) => {
-    wx.login({
-      success: (loginRes) => {
-        if (!loginRes.code) {
-          openidError.value = '获取 openid 失败：未获取到微信登录 code';
-          toast(openidError.value);
-          openidLoading.value = false;
-          resolve('');
-          return;
-        }
-        proxy.$http({
-          baseUrl: baseVar.baseUrl,
-          url: '/blog/auth/cs/user/wechat/mini-program/openid',
-          method: 'post',
-          data: { code: loginRes.code },
-        }).then((res) => {
-          const nextOpenid = res && res.data && res.data.openid;
-          if (nextOpenid) {
-            uni.setStorageSync(OPENID_STORAGE_KEY, nextOpenid);
-            openid.value = nextOpenid;
-            openidError.value = '';
-            resolve(nextOpenid);
-          } else {
-            openid.value = '';
-            openidError.value = (res && res.msg) || '获取 openid 失败，请重试';
-            toast(openidError.value);
-            resolve('');
-          }
-        }).catch((err) => {
-          openid.value = '';
-          openidError.value = (err && err.msg) || '获取 openid 失败，请重试';
-          toast(openidError.value);
-          resolve('');
-        }).finally(() => {
-          openidLoading.value = false;
-        });
-      },
-      fail: () => {
-        openid.value = '';
-        openidError.value = '微信登录失败，请重试';
-        openidLoading.value = false;
-        toast(openidError.value);
-        resolve('');
-      },
-    });
-  });
-}
-
-function retryGetOpenid() {
-  return ensureOpenid(true);
+async function ensureOpenid(force = false) {
+  openid.value = await ensureAppOpenid(force);
+  return openid.value;
 }
 
 async function loadBackendData(persistLocal = true, warningMessage = '读取服务器保存数据失败，已使用本地缓存') {
@@ -725,6 +653,7 @@ onBackPress(() => {
 .save-warning {
   display: flex;
   align-items: flex-start;
+  flex-direction: column;
   gap: 10rpx;
   margin-top: 16rpx;
   padding: 16rpx 18rpx;
@@ -744,53 +673,17 @@ onBackPress(() => {
   backdrop-filter: blur(16rpx);
   -webkit-backdrop-filter: blur(16rpx);
 }
+.save-warning-item{
+	display: flex;
+	align-items: flex-start;
+	
+	gap: 10rpx;
+}
 
 .save-warning-icon {
   flex: 0 0 auto;
 }
 
-
-.openid-status {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12rpx;
-  margin-top: 14rpx;
-  padding: 14rpx 16rpx;
-  border: 1rpx solid #bfdbfe;
-  border-radius: 16rpx;
-  background: #eff6ff;
-  color: #1d4ed8;
-  font-size: 24rpx;
-  line-height: 1.35;
-}
-
-.openid-status.error {
-  border-color: #fecaca;
-  background: #fff1f2;
-  color: #dc2626;
-}
-
-.openid-status text {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.openid-retry {
-  flex: 0 0 auto;
-  height: 48rpx;
-  padding: 0 14rpx;
-  border-radius: 12rpx;
-  background: #ffffff;
-  color: #1769e0;
-  font-size: 23rpx;
-  font-weight: 800;
-  line-height: 48rpx;
-}
-
-.openid-retry::after {
-  border: 0;
-}
 
 .sticky-action-panel {
   position: -webkit-sticky;

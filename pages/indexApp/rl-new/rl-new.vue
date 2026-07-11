@@ -126,13 +126,23 @@ const pageBuffer = 6
 const pageEdge = 3
 const pageBatchSize = 4
 const preparedPageRadius = 2
+const monthPageCache = new Map()
+const monthPageCacheLimit = 24
 
 const getMonthStart = date => new getDate(`${date.getFullYear()}/${date.getMonth()}/1`)
-const createMonthPage = date => ({
-	id: `${date.getFullYear()}-${String(date.getMonth()).padStart(2, '0')}`,
-	date: date.dateFormat(),
-	isReady: false
-})
+const createMonthPage = date => {
+	const id = `${date.getFullYear()}-${String(date.getMonth()).padStart(2, '0')}`
+	const cached = monthPageCache.get(id)
+	if (cached) {
+		monthPageCache.delete(id)
+		monthPageCache.set(id, cached)
+		return cached
+	}
+	const page = { id, date: date.dateFormat(), isReady: false }
+	monthPageCache.set(id, page)
+	if (monthPageCache.size > monthPageCacheLimit) monthPageCache.delete(monthPageCache.keys().next().value)
+	return page
+}
 const offsetMonth = (date, offset) => getMonthStart(new getDate(date.getOffsetMonth(offset).format))
 const createCalendarPages = month => Array.from({ length: pageBuffer * 2 + 1 }, (_, index) => createMonthPage(offsetMonth(new getDate(month.date), index - pageBuffer)))
 const getSlideWidth = () => viewportWidth.value || uni.getSystemInfoSync().windowWidth
@@ -149,13 +159,12 @@ const refreshViewportWidth = () => {
 	}).exec()
 }
 const prepareNearbyPages = () => {
-	calendarPages.value = calendarPages.value.map((page, index) => ({
-		...page,
-		isReady: Math.abs(index - activePageIndex.value) <= preparedPageRadius
-	}))
+	calendarPages.value.forEach((page, index) => {
+		page.isReady = Math.abs(index - activePageIndex.value) <= preparedPageRadius
+	})
 }
 const stabilizePages = () => {
-	const pages = [...calendarPages.value]
+	const pages = calendarPages.value
 	let activeIndex = activePageIndex.value
 	if (activeIndex < pageEdge) {
 		const firstDate = new getDate(pages[0].date)
@@ -170,7 +179,6 @@ const stabilizePages = () => {
 		pages.splice(0, removeCount)
 		activeIndex -= removeCount
 	}
-	calendarPages.value = pages
 	activePageIndex.value = activeIndex
 }
 

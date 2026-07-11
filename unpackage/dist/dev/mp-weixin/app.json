@@ -4,7 +4,8 @@
     "pages/indexApp/xkt/xkt",
     "pages/indexApp/rl-new/rl-new",
     "pages/indexApp/djs/djs",
-    "pages/indexApp/kaipao-equipment-entries/kaipao-equipment-entries"
+    "pages/indexApp/kaipao-equipment-entries/kaipao-equipment-entries",
+    "pages/indexApp/kaipao-season-map/kaipao-season-map"
   ],
   "window": {
     "navigationBarTextStyle": "white",

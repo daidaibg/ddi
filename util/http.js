@@ -1,4 +1,4 @@
-﻿export var baseVar = {
+export var baseVar = {
 	// baseUrl:"https://www.daidaibg.com/wzry-server",
 	socketUrl:"wss://www.daidaibg.com/wss",
 	baseUrl:  "https://www.gaobug.com",

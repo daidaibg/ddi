@@ -12,15 +12,10 @@
 
         <button
           class="preview-close"
-          aria-label="关闭表格预览"
           :disabled="downloading"
-          @tap="close"
+          @tap.stop="close"
         >
-          <u-icon
-            name="close"
-            size="32"
-            color="#475569"
-          />
+          关闭
         </button>
       </view>
 
@@ -31,191 +26,29 @@
         当前预览可能包含尚未保存的修改。
       </view>
 
-      <!--
-        微信小程序中不要让同一个 scroll-view 同时负责横向和纵向滚动。
-        外层只负责纵向，内层只负责横向，手势识别会稳定很多。
-      -->
-      <scroll-view
-        class="preview-vertical-scroll"
+      <view
+        class="preview-stage"
         :style="previewVerticalScrollStyle"
-        :scroll-y="true"
-        :scroll-x="false"
-        :bounces="false"
-        :show-scrollbar="true"
-        :enhanced="true"
-        :nested-scroll-enabled="true"
+        @touchstart="handleTouchStart"
+        @touchmove.stop.prevent="handleTouchMove"
+        @touchend="handleTouchEnd"
+        @touchcancel="handleTouchEnd"
+        @wheel.stop.prevent="handleWheel"
+        @mousedown.prevent="handleMouseDown"
       >
-        <scroll-view
-          v-if="layoutReady"
-          class="preview-horizontal-scroll"
-          :style="previewHorizontalScrollStyle"
-          :scroll-x="true"
-          :scroll-y="false"
-          :bounces="false"
-          :show-scrollbar="true"
-          :enhanced="true"
-          :nested-scroll-enabled="true"
-          :enable-flex="false"
+        <view
+          v-if="layoutReady && previewImagePath"
+          class="preview-image-wrap"
+          :style="previewImageTransformStyle"
         >
-          <view
-            class="preview-table"
-            :style="previewTableStyle"
-          >
-          <!-- 表头 -->
-          <view
-            class="preview-row preview-header"
-            :style="getRowStyle(tableLayout.header.height)"
-          >
-            <view
-              v-for="column in tableLayout.header.columns"
-              :key="column.key"
-              class="preview-cell preview-header-cell"
-              :class="{
-                'index-cell': column.isIndex,
-                'part-cell': !column.isIndex,
-              }"
-              :style="
-                getCellStyle(
-                  column.width,
-                  tableLayout.header.height
-                )
-              "
-            >
-              <view class="line-list header-line-list">
-                <text
-                  v-for="(line, lineIndex) in column.lines"
-                  :key="lineIndex"
-                  class="text-line header-text-line"
-                  :style="{
-                    height: `${TABLE.headerLineHeight}px`,
-                    lineHeight: `${TABLE.headerLineHeight}px`,
-                    fontSize: `${TABLE.headerFontSize}px`,
-                  }"
-                >
-                  {{ line || ' ' }}
-                </text>
-              </view>
-            </view>
-          </view>
-
-          <!-- 数据行 -->
-          <view
-            v-for="rowLayout in tableLayout.rows"
-            :key="rowLayout.key"
-            class="preview-row"
-            :style="getRowStyle(rowLayout.height)"
-          >
-            <!-- 序号 -->
-            <view
-              class="preview-cell index-cell"
-              :style="
-                getCellStyle(
-                  TABLE.indexWidth,
-                  rowLayout.height
-                )
-              "
-            >
-              <text
-                class="index-text"
-                :style="{
-                  fontSize: `${TABLE.indexFontSize}px`,
-                }"
-              >
-                {{ rowLayout.index }}
-              </text>
-            </view>
-
-            <!-- 内容列 -->
-            <view
-              v-for="cellLayout in rowLayout.cells"
-              :key="cellLayout.key"
-              class="preview-cell part-cell"
-              :style="
-                getCellStyle(
-                  TABLE.cellWidth,
-                  rowLayout.height
-                )
-              "
-            >
-              <view
-                v-if="cellLayout.hasContent"
-                class="entry-content"
-                :style="{
-                  height: `${cellLayout.contentHeight}px`,
-                }"
-              >
-                <!-- 标题 -->
-                <view
-                  class="entry-title-block"
-                  :style="{
-                    height: `${cellLayout.titleBlockHeight}px`,
-                    minHeight: `${cellLayout.titleBlockHeight}px`,
-                  }"
-                >
-                  <image
-                    v-if="cellLayout.logo"
-                    class="entry-logo"
-                    :src="cellLayout.logo"
-                    mode="aspectFit"
-                    :style="{
-                      width: `${TABLE.logoSize}px`,
-                      height: `${TABLE.logoSize}px`,
-                      minWidth: `${TABLE.logoSize}px`,
-                      maxWidth: `${TABLE.logoSize}px`,
-                      flexBasis: `${TABLE.logoSize}px`,
-                      marginRight: `${TABLE.logoGap}px`,
-                    }"
-                  />
-
-                  <view class="line-list title-line-list">
-                    <text
-                      v-for="(
-                        line,
-                        lineIndex
-                      ) in cellLayout.titleLines"
-                      :key="lineIndex"
-                      class="text-line title-text-line"
-                      :style="{
-                        height: `${TABLE.titleLineHeight}px`,
-                        lineHeight: `${TABLE.titleLineHeight}px`,
-                        fontSize: `${TABLE.titleFontSize}px`,
-                      }"
-                    >
-                      {{ line || ' ' }}
-                    </text>
-                  </view>
-                </view>
-
-                <!-- 描述 -->
-                <view
-                  v-if="cellLayout.descriptionLines.length"
-                  class="line-list description-line-list"
-                  :style="{
-                    marginTop: `${TABLE.titleDescriptionGap}px`,
-                    height: `${cellLayout.descriptionHeight}px`,
-                  }"
-                >
-                  <text
-                    v-for="(
-                      line,
-                      lineIndex
-                    ) in cellLayout.descriptionLines"
-                    :key="lineIndex"
-                    class="text-line description-text-line"
-                    :style="{
-                      height: `${TABLE.descriptionLineHeight}px`,
-                      lineHeight: `${TABLE.descriptionLineHeight}px`,
-                      fontSize: `${TABLE.descriptionFontSize}px`,
-                    }"
-                  >
-                    {{ line || ' ' }}
-                  </text>
-                </view>
-              </view>
-            </view>
-          </view>
-          </view>
-        </scroll-view>
+          <image
+            class="preview-canvas-image"
+            :src="previewImagePath"
+            mode="fill"
+            :style="previewImageStyle"
+            :draggable="false"
+          />
+        </view>
 
         <view
           v-else
@@ -223,43 +56,58 @@
         >
           正在生成表格预览
         </view>
-      </scroll-view>
 
-      <view class="preview-toolbar">
-        <button
-          class="preview-tool download"
-          :class="{ disabled: downloading || !layoutReady }"
-          aria-label="下载图片"
-          :loading="downloading"
-          :disabled="downloading || !layoutReady"
-          @tap="download"
-        >
-          <u-icon
-            name="download"
-            size="28"
-            color="currentColor"
-          />
+        <view class="preview-floating-tools">
+          <button
+            class="preview-tool"
+            aria-label="放大"
+            :disabled="!layoutReady"
+            @tap="changePreviewScale(1.2)"
+          >
+            <u-icon
+              name="plus"
+              size="30"
+              color="currentColor"
+            />
+          </button>
 
-          <text>
-            {{ downloading ? '下载中' : '下载图片' }}
-          </text>
-        </button>
+          <button
+            class="preview-tool"
+            aria-label="缩小"
+            :disabled="!layoutReady"
+            @tap="changePreviewScale(1 / 1.2)"
+          >
+            <u-icon name="minus" size="30" color="currentColor" />
+          </button>
 
-        <button
-          class="preview-tool"
-          :class="{ disabled: downloading }"
-          aria-label="关闭表格预览"
-          :disabled="downloading"
-          @tap="close"
-        >
-          <u-icon
-            name="close"
-            size="28"
-            color="currentColor"
-          />
+          <button
+            class="preview-tool"
+            aria-label="顺时针旋转"
+            :disabled="!layoutReady"
+            @tap="rotatePreview"
+          >
+            <u-icon name="reload" size="30" color="currentColor" />
+          </button>
 
-          <text>关闭</text>
-        </button>
+          <button
+            class="preview-tool"
+            aria-label="复位"
+            :disabled="!layoutReady"
+            @tap="resetPreviewTransform"
+          >
+            <u-icon name="scan" size="30" color="currentColor" />
+          </button>
+
+          <button
+            class="preview-tool download"
+            :class="{ disabled: downloading || !layoutReady }"
+            aria-label="下载图片"
+            :disabled="downloading || !layoutReady"
+            @tap="download"
+          >
+            <u-icon name="download" size="30" color="currentColor" />
+          </button>
+        </view>
       </view>
     </view>
   </u-popup>
@@ -382,6 +230,11 @@ const { proxy } = getCurrentInstance();
 
 const downloading = ref(false);
 const layoutReady = ref(false);
+const previewImagePath = ref('');
+const previewScale = ref(1);
+const previewRotation = ref(0);
+const previewOffsetX = ref(0);
+const previewOffsetY = ref(0);
 
 const canvasWidth = ref(1);
 const canvasHeight = ref(1);
@@ -392,6 +245,12 @@ const previewViewportHeight = ref(420);
 
 let canvasNode = null;
 let canvasContext = null;
+let touchStartDistance = 0;
+let touchStartScale = 1;
+let touchStartPoint = null;
+let touchStartOffset = null;
+let lastTouchPoint = null;
+let previewStageRect = null;
 
 /**
  * 保存已经下载过的线上图片临时路径。
@@ -498,36 +357,26 @@ const tableLayout = ref({
   rows: [],
 });
 
-const previewTableStyle = computed(() => {
-  const fullWidth =
-    tableLayout.value.width +
-    TABLE.outerPadding * 2;
+const previewImageStyle = computed(() => ({
+  width: `${tableLayout.value.width}px`,
+  height: `${tableLayout.value.height}px`,
+}));
 
-  return {
-    width: `${fullWidth}px`,
-    minWidth: `${fullWidth}px`,
-    maxWidth: `${fullWidth}px`,
-    padding: `${TABLE.outerPadding}px`,
-  };
-});
+const previewImageTransformStyle = computed(() => ({
+  width: `${tableLayout.value.width}px`,
+  height: `${tableLayout.value.height}px`,
+  marginLeft: `-${tableLayout.value.width / 2}px`,
+  marginTop: `-${tableLayout.value.height / 2}px`,
+  transform:
+    `translate(${previewOffsetX.value}px, ${previewOffsetY.value}px) ` +
+    `rotate(${previewRotation.value}deg) ` +
+    `scale(${previewScale.value})`,
+}));
 
 const previewVerticalScrollStyle = computed(() => ({
   width: `${previewViewportWidth.value}px`,
   height: `${previewViewportHeight.value}px`,
 }));
-
-const previewHorizontalScrollStyle = computed(() => {
-  const contentHeight = Math.max(
-    1,
-    tableLayout.value.height +
-      TABLE.outerPadding * 2
-  );
-
-  return {
-    width: `${previewViewportWidth.value}px`,
-    height: `${contentHeight}px`,
-  };
-});
 
 function updatePreviewViewport() {
   const systemInfo = getWindowMetrics();
@@ -541,7 +390,9 @@ function updatePreviewViewport() {
   // 头部约 88rpx，底部工具栏约 86rpx，再预留边框误差。
   const fixedHeight =
     rpxToPx(88) +
-    rpxToPx(86) +
+    (props.unsavedWarning
+      ? rpxToPx(74)
+      : 0) +
     safeBottom +
     4;
 
@@ -550,6 +401,227 @@ function updatePreviewViewport() {
     180,
     modalHeight - fixedHeight
   );
+}
+
+function updatePreviewStageRect() {
+  return new Promise((resolve) => {
+    uni.createSelectorQuery()
+      .in(proxy)
+      .select('.preview-stage')
+      .boundingClientRect((rect) => {
+        previewStageRect = rect || null;
+        resolve();
+      })
+      .exec();
+  });
+}
+
+function clampScale(scale) {
+  return Math.min(4, Math.max(0.1, scale));
+}
+
+function resetPreviewTransform() {
+  const width = tableLayout.value.width;
+  const height = tableLayout.value.height;
+  const fitScale = Math.min(
+    previewViewportWidth.value / Math.max(1, width),
+    previewViewportHeight.value / Math.max(1, height),
+    1
+  );
+
+  previewScale.value = clampScale(fitScale);
+  previewRotation.value = 0;
+  previewOffsetX.value = 0;
+  previewOffsetY.value = 0;
+}
+
+function getPointerPosition(pointer) {
+  const x = Number(
+    pointer?.clientX ??
+    pointer?.pageX ??
+    pointer?.x
+  );
+  const y = Number(
+    pointer?.clientY ??
+    pointer?.pageY ??
+    pointer?.y
+  );
+
+  return Number.isFinite(x) && Number.isFinite(y)
+    ? { x, y }
+    : null;
+}
+
+function getStagePoint(pointer) {
+  const rect = previewStageRect;
+  const position = getPointerPosition(pointer);
+
+  if (!rect || !position) {
+    return {
+      x: previewViewportWidth.value / 2,
+      y: previewViewportHeight.value / 2,
+    };
+  }
+
+  return {
+    x: position.x - rect.left,
+    y: position.y - rect.top,
+  };
+}
+
+function zoomPreviewAt(
+  scale,
+  point = {
+    x: previewViewportWidth.value / 2,
+    y: previewViewportHeight.value / 2,
+  },
+  baseScale = previewScale.value,
+  baseOffset = {
+    x: previewOffsetX.value,
+    y: previewOffsetY.value,
+  },
+  anchorPoint = point
+) {
+  const nextScale = clampScale(scale);
+  const ratio = nextScale / baseScale;
+  const centerX = previewViewportWidth.value / 2;
+  const centerY = previewViewportHeight.value / 2;
+
+  previewOffsetX.value =
+    point.x - centerX -
+    (anchorPoint.x - centerX - baseOffset.x) * ratio;
+  previewOffsetY.value =
+    point.y - centerY -
+    (anchorPoint.y - centerY - baseOffset.y) * ratio;
+  previewScale.value = nextScale;
+}
+
+function changePreviewScale(multiplier) {
+  zoomPreviewAt(previewScale.value * multiplier);
+}
+
+function getTouchDistance(touches) {
+  const first = getPointerPosition(touches[0]);
+  const second = getPointerPosition(touches[1]);
+
+  if (!first || !second) return 0;
+
+  const x = first.x - second.x;
+  const y = first.y - second.y;
+  return Math.hypot(x, y);
+}
+
+function getTouchCenter(touches) {
+  const first = getPointerPosition(touches[0]);
+  const second = getPointerPosition(touches[1]);
+
+  if (!first || !second) return null;
+
+  return {
+    x: (first.x + second.x) / 2,
+    y: (first.y + second.y) / 2,
+  };
+}
+
+function handleTouchStart(event) {
+  const touches = event.touches || [];
+
+  if (touches.length >= 2) {
+    touchStartDistance = getTouchDistance(touches);
+    touchStartScale = previewScale.value;
+    touchStartPoint = getStagePoint(getTouchCenter(touches));
+    touchStartOffset = {
+      x: previewOffsetX.value,
+      y: previewOffsetY.value,
+    };
+    lastTouchPoint = null;
+    return;
+  }
+
+  if (touches.length === 1) {
+    lastTouchPoint = getPointerPosition(touches[0]);
+  }
+}
+
+function handleTouchMove(event) {
+  const touches = event.touches || [];
+
+  if (touches.length >= 2 && touchStartDistance) {
+    const point = getStagePoint(getTouchCenter(touches));
+
+    zoomPreviewAt(
+      touchStartScale *
+        getTouchDistance(touches) /
+        touchStartDistance,
+      point,
+      touchStartScale,
+      touchStartOffset,
+      touchStartPoint
+    );
+    return;
+  }
+
+  if (touches.length === 1 && lastTouchPoint) {
+    const point = getPointerPosition(touches[0]);
+
+    if (!point) return;
+
+    previewOffsetX.value += point.x - lastTouchPoint.x;
+    previewOffsetY.value += point.y - lastTouchPoint.y;
+    lastTouchPoint = point;
+  }
+}
+
+function handleTouchEnd(event) {
+  const touches = event.touches || [];
+  touchStartDistance = 0;
+  touchStartPoint = null;
+  touchStartOffset = null;
+
+  lastTouchPoint = touches.length === 1
+    ? getPointerPosition(touches[0])
+    : null;
+}
+
+function handleWheel(event) {
+  const source = event.originalEvent || event;
+  const delta = Number(
+    source.deltaY ??
+    source.detail?.deltaY ??
+    -source.wheelDelta
+  ) || 0;
+
+  if (!delta) return;
+
+  zoomPreviewAt(
+    previewScale.value * (delta < 0 ? 1.12 : 0.89),
+    getStagePoint(source)
+  );
+}
+
+function handleMouseDown(event) {
+  lastTouchPoint = getPointerPosition(event);
+}
+
+function handleMouseMove(event) {
+  if (!lastTouchPoint) return;
+
+  const point = getPointerPosition(event);
+
+  if (!point) return;
+
+  previewOffsetX.value += point.x - lastTouchPoint.x;
+  previewOffsetY.value += point.y - lastTouchPoint.y;
+  lastTouchPoint = point;
+}
+
+function handleMouseUp() {
+  lastTouchPoint = null;
+}
+
+function rotatePreview() {
+  previewRotation.value =
+    (previewRotation.value + 90) % 360;
 }
 
 function getRowCell(row, index) {
@@ -568,38 +640,6 @@ function close() {
   if (downloading.value) return;
 
   updateVisible(false);
-}
-
-function getRowStyle(height) {
-  const width = tableLayout.value.width;
-
-  return {
-    width: `${width}px`,
-    minWidth: `${width}px`,
-    maxWidth: `${width}px`,
-
-    height: `${height}px`,
-    minHeight: `${height}px`,
-    maxHeight: `${height}px`,
-  };
-}
-
-function getCellStyle(width, height) {
-  return {
-    width: `${width}px`,
-    minWidth: `${width}px`,
-    maxWidth: `${width}px`,
-
-    flexBasis: `${width}px`,
-
-    height: `${height}px`,
-    minHeight: `${height}px`,
-    maxHeight: `${height}px`,
-
-    padding:
-      `${TABLE.cellPaddingY}px ` +
-      `${TABLE.cellPaddingX}px`,
-  };
 }
 
 function setCanvasFont(
@@ -1067,6 +1107,7 @@ function resizeCanvas(
 
 async function rebuildLayout() {
   layoutReady.value = false;
+  previewImagePath.value = '';
 
   await nextTick();
 
@@ -1077,6 +1118,12 @@ async function rebuildLayout() {
     tableLayout.value =
       createTableLayout(ctx);
 
+    previewImagePath.value =
+      await renderTableImage();
+
+    await nextTick();
+    await updatePreviewStageRect();
+    resetPreviewTransform();
     layoutReady.value = true;
   } catch (error) {
     console.warn(
@@ -1968,6 +2015,53 @@ function saveImageToAlbum(filePath) {
   );
 }
 
+async function renderTableImage() {
+  const layout = tableLayout.value;
+  const { canvas } = await getCanvasNode();
+  const imagePaths = await loadExportImages(canvas);
+  const scale = getExportScale(
+    layout.width,
+    layout.height
+  );
+  const outputWidth = Math.max(
+    1,
+    Math.ceil(layout.width * scale)
+  );
+  const outputHeight = Math.max(
+    1,
+    Math.ceil(layout.height * scale)
+  );
+
+  resizeCanvas(
+    canvas,
+    outputWidth,
+    outputHeight
+  );
+  await nextTick();
+
+  canvasContext = canvas.getContext('2d');
+  canvasContext.setTransform(
+    scale,
+    0,
+    0,
+    scale,
+    0,
+    0
+  );
+  drawExportTable(
+    canvasContext,
+    layout,
+    imagePaths
+  );
+  await flushCanvas();
+
+  return canvasToFile(
+    canvas,
+    outputWidth,
+    outputHeight
+  );
+}
+
 async function download() {
   if (
     downloading.value ||
@@ -1988,86 +2082,9 @@ async function download() {
   downloading.value = true;
 
   try {
-    const layout =
-      tableLayout.value;
-
-    const { canvas, ctx } =
-      await getCanvasNode();
-
-    /*
-     * 必须先下载所有线上图片，
-     * 并转换为 Canvas 2D Image 对象。
-     */
-    const imagePaths =
-      await loadExportImages(
-        canvas
-      );
-
-    const scale =
-      getExportScale(
-        layout.width,
-        layout.height
-      );
-
-    const outputWidth =
-      Math.max(
-        1,
-        Math.ceil(
-          layout.width *
-            scale
-        )
-      );
-
-    const outputHeight =
-      Math.max(
-        1,
-        Math.ceil(
-          layout.height *
-            scale
-        )
-      );
-
-    resizeCanvas(
-      canvas,
-      outputWidth,
-      outputHeight
-    );
-
-    await nextTick();
-
-    /*
-     * 修改 canvas.width/height 后上下文状态会重置，
-     * 因此重新取得上下文并设置缩放。
-     */
-    canvasContext =
-      canvas.getContext('2d');
-
-    const exportContext =
-      canvasContext;
-
-    exportContext.setTransform(
-      scale,
-      0,
-      0,
-      scale,
-      0,
-      0
-    );
-
-    drawExportTable(
-      exportContext,
-      layout,
-      imagePaths
-    );
-
-    await flushCanvas();
-
     const filePath =
-      await canvasToFile(
-        canvas,
-        outputWidth,
-        outputHeight
-      );
+      previewImagePath.value ||
+      await renderTableImage();
 
     await saveImageToAlbum(
       filePath
@@ -2132,6 +2149,8 @@ onMounted(async () => {
     'keydown',
     keydownHandler
   );
+  window.addEventListener('mousemove', handleMouseMove);
+  window.addEventListener('mouseup', handleMouseUp);
   // #endif
 });
 
@@ -2147,6 +2166,8 @@ onBeforeUnmount(() => {
       keydownHandler
     );
   }
+  window.removeEventListener('mousemove', handleMouseMove);
+  window.removeEventListener('mouseup', handleMouseUp);
   // #endif
 });
 </script>
@@ -2199,11 +2220,15 @@ onBeforeUnmount(() => {
 }
 
 .preview-close {
-  width: 58rpx;
+  min-width: 104rpx;
   height: 58rpx;
-  padding: 0;
+  padding: 0 20rpx;
   border-radius: 14rpx;
   background: #f1f5f9;
+  color: #475569;
+  font-size: 24rpx;
+  font-weight: 800;
+  line-height: 58rpx;
 }
 
 .preview-close:active,
@@ -2227,21 +2252,36 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
 }
 
-.preview-vertical-scroll {
+.preview-stage {
+  position: relative;
   display: block;
   flex: 0 0 auto;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
   background: #edf3fb;
   box-sizing: border-box;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
 
-.preview-horizontal-scroll {
+.preview-stage:active {
+  cursor: grabbing;
+}
+
+.preview-image-wrap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.preview-canvas-image {
   display: block;
-  min-width: 0;
-  background: #edf3fb;
-  box-sizing: border-box;
-  white-space: nowrap;
+  flex: none;
+  pointer-events: none;
 }
 
 .preview-loading {
@@ -2253,205 +2293,32 @@ onBeforeUnmount(() => {
   font-size: 24rpx;
 }
 
-.preview-table {
-  display: block;
-  flex: none;
-  white-space: normal;
-  box-sizing: border-box;
-}
-
-.preview-row {
+.preview-floating-tools {
+  position: absolute;
+  z-index: 3;
+  top: 18rpx;
+  right: 18rpx;
   display: flex;
-  flex: 0 0 auto;
-  align-items: stretch;
-  box-sizing: border-box;
-}
-
-.preview-cell {
-  display: flex;
-  min-width: 0;
-  flex-grow: 0;
-  flex-shrink: 0;
   flex-direction: column;
-  justify-content: center;
-  overflow: hidden;
-
-  border-right:
-    1px solid #dbe5f2;
-
-  border-bottom:
-    1px solid #dbe5f2;
-
-  background: #ffffff;
-  color: #172033;
-  box-sizing: border-box;
-}
-
-.preview-row:first-child
-.preview-cell {
-  border-top:
-    1px solid #dbe5f2;
-}
-
-.preview-cell:first-child {
-  border-left:
-    1px solid #dbe5f2;
-}
-
-.preview-header-cell {
   align-items: center;
-  justify-content: center;
-  background: #ecf5ff;
-  color: #1769e0;
-  font-weight: 600;
-  text-align: center;
-}
-
-.index-cell {
-  align-items: center;
-  justify-content: center;
-  color: #1769e0;
-  font-weight: 600;
-  text-align: center;
-}
-
-.index-text {
-  display: block;
-  width: 100%;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.entry-content {
-  display: flex;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  align-self: stretch;
-  flex: 0 0 auto;
-  flex-direction: column;
-  justify-content: flex-start;
-  box-sizing: border-box;
-}
-
-.entry-title-block {
-  display: flex;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  align-items: flex-start;
-  justify-content: flex-start;
-  box-sizing: border-box;
-}
-
-.entry-logo {
-  flex-grow: 0;
-  flex-shrink: 0;
-  margin-top: 0;
-  margin-bottom: 0;
-  margin-left: 0;
-}
-
-.line-list {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-.header-line-list {
-  width: 100%;
-  max-width: 100%;
-  align-items: center;
-  text-align: center;
-}
-
-.title-line-list {
-  width: 0;
-  min-width: 0;
-  max-width: none;
-  flex: 1 1 0;
-  color: #172033;
-  font-weight: 600;
-}
-
-.description-line-list {
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  align-self: stretch;
-  color: #64748b;
-  font-weight: 400;
-}
-
-.text-line {
-  display: block;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  overflow: visible;
-
-  white-space: nowrap;
-  word-break: normal;
-  overflow-wrap: normal;
-
-  font-family:
-    "PingFang SC",
-    "Microsoft YaHei",
-    Arial,
-    sans-serif;
-
-  box-sizing: border-box;
-}
-
-.header-text-line {
-  text-align: center;
-  font-weight: 600;
-}
-
-.title-text-line {
-  text-align: left;
-  font-weight: 600;
-}
-
-.description-text-line {
-  text-align: left;
-  font-weight: 400;
-}
-
-.preview-toolbar {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12rpx;
-
-  padding:
-    14rpx
-    16rpx
-    calc(
-      14rpx +
-      env(safe-area-inset-bottom)
-    );
-
-  border-top:
-    1rpx solid #e5edf7;
-
-  background: #ffffff;
-  box-sizing: border-box;
+  gap: 10rpx;
+  padding: 10rpx;
+  border: 1rpx solid rgba(255, 255, 255, .72);
+  border-radius: 18rpx;
+  background: rgba(255, 255, 255, .88);
+  box-shadow: 0 8rpx 28rpx rgba(15, 23, 42, .18);
+  backdrop-filter: blur(12px);
 }
 
 .preview-tool {
-  min-width: 136rpx;
-  height: 58rpx;
-  gap: 6rpx;
-  padding: 0 16rpx;
+  width: 64rpx;
+  min-width: 64rpx;
+  height: 64rpx;
+  padding: 0;
   border-radius: 14rpx;
   background: #f1f6fd;
   color: #3d5875;
-  font-size: 24rpx;
-  font-weight: 800;
-  line-height: 58rpx;
+  line-height: 64rpx;
   transition:
     transform 0.12s ease,
     opacity 0.12s ease;
@@ -2477,7 +2344,7 @@ onBeforeUnmount(() => {
 @media (max-width: 480px) {
   .table-preview-modal {
     width: 98vw;
-    height: 95vh;
+    height: 94vh;
     border-radius: 16rpx;
   }
 }

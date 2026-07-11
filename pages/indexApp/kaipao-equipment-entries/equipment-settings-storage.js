@@ -2,8 +2,6 @@
 
 export const ENTRY_IDS_STORAGE_KEY = 'kaipao_equipment_entry_ids';
 export const SETTINGS_STORAGE_KEY = 'kaipao_equipment_entry_settings';
-export const OPENID_STORAGE_KEY = 'openid';
-export const USER_SESSION_STORAGE_KEY = 'wxloginsession';
 
 const DEFAULT_ROW_COUNT = 6;
 const DEFAULT_SHOW_FULL_NAME = true;

@@ -135,6 +135,25 @@ page {
   box-shadow: 0 22rpx 52rpx rgba(120, 112, 255, 0.28);
   box-sizing: border-box;
 }
+.openid-action {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16rpx;
+}
+.openid-retry {
+  height: 52rpx;
+  padding: 0 20rpx;
+  border-radius: 999rpx;
+  background: #fff;
+  box-shadow: 0 8rpx 18rpx rgba(15, 23, 42, 0.08);
+  color: #1769e0;
+  font-size: 23rpx;
+  font-weight: 800;
+  line-height: 52rpx;
+}
+.openid-retry::after {
+  border: 0;
+}
 .home_hero::before {
   content: "";
   position: absolute;

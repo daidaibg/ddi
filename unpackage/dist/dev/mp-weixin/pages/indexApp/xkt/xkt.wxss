@@ -128,8 +128,8 @@ page {
   height: 100%;
 }
 .xkt .tip {
-  text-align: center;
   padding-top: 14rpx;
+  text-align: center;
 }
 .xkt .tip text {
   color: rgba(0, 0, 0, 0.6);
@@ -138,20 +138,18 @@ page {
   padding: 16rpx;
 }
 .xkt .xktContent .xkt_wk {
-  border-radius: 10rpx;
-  border-bottom-left-radius: 20rpx;
-  border-bottom-right-radius: 20rpx;
-  background-color: white;
-  height: 240rpx;
-  border: 2rpx solid #e0e0e0;
-  box-shadow: 0 8rpx 8rpx rgba(0, 0, 0, 0.3), 0 0 6rpx rgba(0, 0, 0, 0.04);
   position: relative;
+  height: 240rpx;
+  background-color: white;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 10rpx 10rpx 20rpx 20rpx;
+  box-shadow: 0 8rpx 8rpx rgba(0, 0, 0, 0.3), 0 0 6rpx rgba(0, 0, 0, 0.04);
 }
 .xkt .xktContent .xkt_wk .wdWrap {
-  margin-top: 10rpx;
   display: flex;
   justify-content: space-between;
   height: 104rpx;
+  margin-top: 10rpx;
 }
 .xkt .xktContent .xkt_wk .wdWrap image {
   width: 89rpx;
@@ -161,15 +159,15 @@ page {
   margin-right: 36rpx;
 }
 .xkt .xktContent .xkt_wk .wdWrap .xkt-wd .wdicon {
-  font-size: 24rpx;
   margin-top: 16rpx;
+  font-size: 24rpx;
 }
 .xkt .xktContent .xkt_wk .wdWrap .xkt-wd .wd {
-  margin-left: 22rpx;
-  margin-top: 8rpx;
   width: 60rpx;
-  font-family: "Digital-7";
+  margin-top: 8rpx;
+  margin-left: 22rpx;
   color: #cccccc;
+  font-family: "Digital-7";
 }
 .xkt .xktContent .xkt_wk .logo2 {
   display: flex;
@@ -182,29 +180,29 @@ page {
   height: 16rpx;
 }
 .xkt .xktContent .xkt_wk .xian {
-  margin-top: 20rpx;
-  height: 2rpx;
-  background: #e0e0e0;
   position: relative;
+  height: 2rpx;
+  margin-top: 20rpx;
+  background: #e0e0e0;
 }
 .xkt .xktContent .xkt_wk .xian .dian {
+  position: absolute;
+  top: 4rpx;
+  right: 28rpx;
   width: 8rpx;
   height: 8rpx;
-  position: absolute;
-  right: 28rpx;
-  top: 4rpx;
   border-radius: 50%;
 }
 .xkt .xktfeng {
-  width: 100%;
   display: flex;
   justify-content: center;
+  width: 100%;
   margin: 16rpx 0;
 }
 .xkt .xktfeng view {
-  background-color: #bbbbbb;
   width: 5px;
   height: 90rpx;
+  background-color: #bbbbbb;
 }
 .xkt .caozuo {
   display: flex;
@@ -212,29 +210,29 @@ page {
   margin-top: 80rpx;
 }
 .xkt .caozuo view {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 90rpx;
   height: 90rpx;
-  border-radius: 50%;
-  overflow: hidden;
-  box-shadow: 0 8rpx 8rpx rgba(0, 0, 0, 0.3), 0 0 6rpx rgba(0, 0, 0, 0.04);
-  margin: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   padding: 0;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  box-shadow: 0 8rpx 8rpx rgba(0, 0, 0, 0.3), 0 0 6rpx rgba(0, 0, 0, 0.04);
 }
 .xkt .caozuo view image {
   width: 54rpx;
   height: 54rpx;
 }
 .xkt .sx {
-  margin-top: 0rpx;
   flex-direction: column;
   align-items: center;
+  margin-top: 0;
 }
 .xkt .sx view {
-  background-color: #e0e0e0;
   margin-top: 60rpx;
+  background-color: #e0e0e0;
 }
 .xkt .sx view image {
   width: 30rpx;

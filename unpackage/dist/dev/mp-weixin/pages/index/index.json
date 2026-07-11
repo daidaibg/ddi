@@ -6,6 +6,7 @@
   "backgroundColorTop": "#0052d9",
   "backgroundColorBottom": "#f4f7ff",
   "usingComponents": {
+    "u-icon": "../../uni_modules/uview-pro/components/u-icon/u-icon",
     "refresh": "../../components/Refresh/Refresh/Refresh"
   }
 }

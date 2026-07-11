@@ -55,6 +55,16 @@
 				"backgroundColorTop": "#1769e0",
 				"backgroundColorBottom": "#f4f7ff"
 			}
+		},
+		{
+			"path": "pages/indexApp/kaipao-season-map/kaipao-season-map",
+			"style": {
+				"navigationBarTitleText": "赛季地图",
+				"enablePullDownRefresh": false,
+				"navigationBarBackgroundColor": "#1769e0",
+				"backgroundColorTop": "#1769e0",
+				"backgroundColorBottom": "#eef6ff"
+			}
 		}
 	],
 	"globalStyle": {

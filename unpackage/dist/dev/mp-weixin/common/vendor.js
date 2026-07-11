@@ -7217,7 +7217,7 @@ function isConsoleWritable() {
 function initRuntimeSocketService() {
   const hosts = "192.168.1.35,10.160.7.235,127.0.0.1";
   const port = "8090";
-  const id = "mp-weixin_XIeCrK";
+  const id = "mp-weixin_9IpnOI";
   const lazy = typeof swan !== "undefined";
   let restoreError = lazy ? () => {
   } : initOnError();
@@ -8177,6 +8177,11 @@ const onHide = /* @__PURE__ */ createLifeCycleHook(
   1 | 2
   /* HookFlags.PAGE */
 );
+const onLaunch = /* @__PURE__ */ createLifeCycleHook(
+  ON_LAUNCH,
+  1
+  /* HookFlags.APP */
+);
 const onLoad = /* @__PURE__ */ createLifeCycleHook(
   ON_LOAD,
   2
@@ -8194,6 +8199,11 @@ const onUnload = /* @__PURE__ */ createLifeCycleHook(
 );
 const onBackPress = /* @__PURE__ */ createLifeCycleHook(
   ON_BACK_PRESS,
+  2
+  /* HookFlags.PAGE */
+);
+const onShareTimeline = /* @__PURE__ */ createLifeCycleHook(
+  ON_SHARE_TIMELINE,
   2
   /* HookFlags.PAGE */
 );
@@ -8218,12 +8228,14 @@ exports.o = o;
 exports.onBackPress = onBackPress;
 exports.onBeforeUnmount = onBeforeUnmount;
 exports.onHide = onHide;
+exports.onLaunch = onLaunch;
 exports.onLoad = onLoad;
 exports.onMounted = onMounted;
 exports.onPageHide = onPageHide;
 exports.onPageShow = onPageShow;
 exports.onReady = onReady;
 exports.onShareAppMessage = onShareAppMessage;
+exports.onShareTimeline = onShareTimeline;
 exports.onUnload = onUnload;
 exports.p = p;
 exports.r = r;

@@ -44,7 +44,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     b: common_vendor.t($data.loadingText),
     c: common_vendor.o((...args) => $options.onRefresh && $options.onRefresh(...args), "54"),
     d: $data.triggered,
-    e: common_vendor.o((...args) => $options.loadMore && $options.loadMore(...args), "d2")
+    e: common_vendor.o((...args) => $options.loadMore && $options.loadMore(...args), "ab")
   };
 }
 const Component = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);

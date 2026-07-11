@@ -9,6 +9,9 @@
 				</view>
 				<image src="https://www.gaobug.com/img/daidai/av/daidai1.png" mode="aspectFill" class="hero_img"></image>
 			</view>
+			<view class="openid-action">
+				<button class="openid-retry" :loading="refreshingOpenid" @tap="refreshOpenid">重新获取 openid</button>
+			</view>
 
 			<view class="tool_group" v-for="group in toolGroups" :key="group.name">
 				<view class="section_head">
@@ -19,7 +22,8 @@
 				<view class="index_app">
 					<view class="item" v-for="item in group.items" :key="item.url" @click="navigateTos(item)">
 						<view class="icon_box" :style="{ backgroundColor: item.bg }">
-							<image :src="item.image" mode="aspectFit" class="imagecla"></image>
+							<u-icon v-if="item.icon" :name="item.icon" color="#1769e0" size="42"></u-icon>
+							<image v-else :src="item.image" mode="aspectFit" class="imagecla"></image>
 						</view>
 						<view class="item_text_wrap">
 							<text class="textcla">{{item.name}}</text>
@@ -33,8 +37,12 @@
 </template>
 
 <script setup>
+	import { ref } from 'vue'
 	import Refresh from '../../components/Refresh/Refresh/Refresh.vue'
 	import { onLoad, onShareAppMessage, onUnload } from '@dcloudio/uni-app'
+	import { ensureOpenid } from '../../util/openid.js'
+
+	const refreshingOpenid = ref(false)
 	const toolGroups = [
 		{
 			name: '常用功能',
@@ -73,12 +81,31 @@
 					desc: '开炮配置',
 					url: '/pages/indexApp/kaipao-equipment-entries/kaipao-equipment-entries',
 					bg: '#eaf2ff'
+				},
+				{
+					icon: 'map-fill',
+					name: '赛季地图',
+					desc: '查看地图绘制结果',
+					url: '/pages/indexApp/kaipao-season-map/kaipao-season-map',
+					bg: '#eaf2ff'
 				}
 			]
 		}
 	]
 
 	const onRefresh = () => {}
+
+	const refreshOpenid = async () => {
+		if (refreshingOpenid.value) return
+
+		refreshingOpenid.value = true
+		try {
+			const openid = await ensureOpenid(true)
+			if (openid) uni.showToast({ title: 'openid 获取成功', icon: 'success' })
+		} finally {
+			refreshingOpenid.value = false
+		}
+	}
 
 	const navigateTos = ({ url }) => {
 		if (!url) return
@@ -114,6 +141,28 @@
 			linear-gradient(135deg, #8d7cff 0%, #6dbbff 46%, #ff9ed8 100%);
 		box-shadow: 0 22rpx 52rpx rgba(120, 112, 255, .28);
 		box-sizing: border-box;
+	}
+
+	.openid-action {
+		display: flex;
+		justify-content: flex-end;
+		margin-top: 16rpx;
+	}
+
+	.openid-retry {
+		height: 52rpx;
+		padding: 0 20rpx;
+		border-radius: 999rpx;
+		background: #fff;
+		box-shadow: 0 8rpx 18rpx rgba(15, 23, 42, .08);
+		color: #1769e0;
+		font-size: 23rpx;
+		font-weight: 800;
+		line-height: 52rpx;
+	}
+
+	.openid-retry::after {
+		border: 0;
 	}
 
 	.home_hero::before {

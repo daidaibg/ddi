@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 const common_vendor = require("./common/vendor.js");
+const util_openid = require("./util/openid.js");
 const uni_modules_uviewPro_index = require("./uni_modules/uview-pro/index.js");
 const util_http = require("./util/http.js");
 const util_currency = require("./util/currency.js");
@@ -10,46 +11,42 @@ if (!Math) {
   "./pages/indexApp/rl-new/rl-new.js";
   "./pages/indexApp/djs/djs.js";
   "./pages/indexApp/kaipao-equipment-entries/kaipao-equipment-entries.js";
+  "./pages/indexApp/kaipao-season-map/kaipao-season-map.js";
 }
 const _sfc_main = {
-  onLaunch() {
-    this.autoUpdate();
-  },
-  onShow: function() {
-  },
-  onHide: function() {
-  },
-  methods: {
-    autoUpdate() {
-      var self = this;
+  __name: "App",
+  setup(__props) {
+    common_vendor.onLaunch(() => {
+      autoUpdate();
+      util_openid.ensureOpenid(false, { showError: false });
+    });
+    const autoUpdate = () => {
       if (common_vendor.wx$1.canIUse("getUpdateManager")) {
         const updateManager = common_vendor.wx$1.getUpdateManager();
-        updateManager.onCheckForUpdate(function(res) {
-          if (res.hasUpdate) {
-            self.downLoadAndUpdate(updateManager);
-          }
+        updateManager.onCheckForUpdate((res) => {
+          if (res.hasUpdate)
+            downLoadAndUpdate(updateManager);
         });
-      } else {
-        common_vendor.wx$1.showModal({
-          title: "提示",
-          content: "当前微信版本过低，无法使用该功能，请升级到最新微信版本后重试。"
-        });
+        return;
       }
-    },
-    /**
-     * 下载小程序新版本并重启应用
-     */
-    downLoadAndUpdate: function(updateManager) {
-      updateManager.onUpdateReady(function() {
+      common_vendor.wx$1.showModal({
+        title: "提示",
+        content: "当前微信版本过低，无法使用该功能，请升级到最新微信版本后重试。"
+      });
+    };
+    const downLoadAndUpdate = (updateManager) => {
+      updateManager.onUpdateReady(() => {
         updateManager.applyUpdate();
       });
-      updateManager.onUpdateFailed(function() {
+      updateManager.onUpdateFailed(() => {
         common_vendor.wx$1.showModal({
           title: "已经有新版本了哟~",
           content: "新版本已经上线啦~，请您删除当前小程序，重新搜索打开哟~"
         });
       });
-    }
+    };
+    return () => {
+    };
   }
 };
 function createApp() {
