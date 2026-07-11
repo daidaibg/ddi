@@ -1,1 +1,0 @@
-<view class="time_wrap_list data-v-2faf1ec8" style="{{b}}"><view wx:for="{{a}}" wx:for-item="item" wx:key="b" class="noAnimationFilpper data-v-2faf1ec8"><view class="noAnimationFilpperitem data-v-2faf1ec8">{{item.a}}</view></view></view>

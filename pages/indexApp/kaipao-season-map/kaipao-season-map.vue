@@ -24,7 +24,7 @@
         mode="aspectFit"
         show-menu-by-longpress
       ></image>
-      <text class="qr-tip">长按识别二维码，关注公众号</text>
+      <text class="qr-tip">长按识别二维码，进入公众号使用</text>
     </view>
   </view>
 </template>
