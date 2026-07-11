@@ -10,11 +10,14 @@
 			<view class="today-button" hover-class="today-button--pressed" @click="goToday">今天</view>
 		</view>
 
-		<swiper class="swiper" :current="swiperActive" :duration="duration" easing-function="easeOutCubic" circular @change="swiperChange">
-			<swiper-item v-for="item in swiperList" :key="item" class="swiper-item">
+		<view class="calendar-viewport" :style="viewportStyle" @touchstart="onTouchStart" @touchmove="onTouchMove" @touchend="onTouchEnd" @touchcancel="onTouchCancel" @mousedown="onMouseDown" @mousemove="onMouseMove" @mouseup="onMouseUp" @mouseleave="onMouseLeave">
+			<view class="calendar-track" :class="{ 'calendar-track--animating': isAnimating && transitionEnabled }" :style="trackStyle" @transitionend="onTransitionEnd">
+			<view v-for="item in calendarPages" :key="item.id" class="calendar-slide">
 				<RlNewItem
 					class="calendar-content"
-					:now-date="item"
+					:now-date="item.date"
+					:is-ready="item.isReady"
+					:holiday-version="holidayVersion"
 					:selected-date="selectedDate"
 					:latest-date="setData.timestamp"
 					:shifts-num="setData.shiftsNum"
@@ -29,8 +32,10 @@
 						</view>
 					</view>
 				</RlNewItem>
-			</swiper-item>
-		</swiper>
+			</view>
+			</view>
+			<view v-if="isAnimating && transitionEnabled" class="calendar-animation-signal" :style="animationSignalStyle" @animationend="onTransitionEnd" />
+		</view>
 
 		<view class="calendar-summary">
 			<view class="summary-heading">
@@ -46,7 +51,6 @@
 			</view>
 			<view v-else class="summary-empty"><u-icon name="calendar" color="#df8ca8" size="30rpx" /><text>轻触日历中的日期，查看当天的农历与排班提示</text></view>
 			<view class="rule-overview"><view><text>轮班周期</text><text class="rule-value">{{ setData.shiftsNum || '未设置' }}</text></view><view><text>基准日期</text><text class="rule-value">{{ setData.time || '未设置' }}</text></view></view>
-			<text v-if="holidayLoadState === 'error'" class="holiday-load-tip">节假日安排暂未加载，已保留基础农历信息。</text>
 		</view>
 
 		<u-popup v-model="configShow" mode="bottom" round="28" closeable>
@@ -83,16 +87,27 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
+import { computed, nextTick, ref } from 'vue'
+import { onHide, onLoad, onReady, onShareAppMessage } from '@dcloudio/uni-app'
 import getDate from '@/util/getDate.js'
 import RlNewItem from './rl-new-item.vue'
 import { randomPopupTexts } from '@/util/popupTexts.js'
 import { buildHolidayMap, loadHolidayCalendar } from '@/util/rq.js'
 
 const defaultConfig = { shiftsNum: 0, time: null, timeData: null, timestamp: null }
-const swiperActive = ref(2)
-const swiperList = ref([])
+const currentMonth = ref(null)
+const calendarPages = ref([])
+const activePageIndex = ref(6)
+const isAnimating = ref(false)
+const transitionDirection = ref(0)
+const transitionEnabled = ref(true)
+const transitionDuration = ref(0)
+const dragOffset = ref(0)
+const viewportWidth = ref(uni.getSystemInfoSync().windowWidth)
+const dragState = { startX: 0, startY: 0, startTime: 0, mode: '', input: '', active: false }
+let pendingDragOffset = 0
+let dragFrameToken = 0
+let dragFramePending = false
 const selectedDate = ref(new getDate().dateFormat())
 const selectedDay = ref(null)
 const configShow = ref(false)
@@ -100,23 +115,87 @@ const calendarShow = ref(false)
 const selectShow = ref(false)
 const setData = ref({ ...defaultConfig })
 const holidayMap = ref({})
-const holidayLoadState = ref('idle')
+const holidayVersion = ref(0)
 const attemptedHolidayYears = new Set()
+const pendingHolidayResults = []
 const shiftOptions = Array.from({ length: 31 }, (_, index) => ({ value: index + 1, label: index + 1 }))
-const duration = 650
+const switchDistanceRatio = 0.22
+const switchDistanceMin = 56
+const switchVelocity = 0.45
+const pageBuffer = 6
+const pageEdge = 3
+const pageBatchSize = 4
+const preparedPageRadius = 2
 
-const updateSwiperList = (date, offsets) => offsets.map(offset => date.getOffsetMonth(offset).format)
+const getMonthStart = date => new getDate(`${date.getFullYear()}/${date.getMonth()}/1`)
+const createMonthPage = date => ({
+	id: `${date.getFullYear()}-${String(date.getMonth()).padStart(2, '0')}`,
+	date: date.dateFormat(),
+	isReady: false
+})
+const offsetMonth = (date, offset) => getMonthStart(new getDate(date.getOffsetMonth(offset).format))
+const createCalendarPages = month => Array.from({ length: pageBuffer * 2 + 1 }, (_, index) => createMonthPage(offsetMonth(new getDate(month.date), index - pageBuffer)))
+const getSlideWidth = () => viewportWidth.value || uni.getSystemInfoSync().windowWidth
+const viewportStyle = computed(() => ({ '--calendar-slide-width': `${getSlideWidth()}px` }))
+const trackStyle = computed(() => ({
+	width: `${calendarPages.value.length * getSlideWidth()}px`,
+	transform: `translate3d(${-activePageIndex.value * getSlideWidth() + dragOffset.value}px,0,0)`,
+	transitionDuration: isAnimating.value && transitionEnabled.value ? `${transitionDuration.value}ms` : '0ms'
+}))
+const animationSignalStyle = computed(() => ({ animationDuration: `${transitionDuration.value}ms` }))
+const refreshViewportWidth = () => {
+	uni.createSelectorQuery().select('.calendar-viewport').boundingClientRect(rect => {
+		if (rect?.width) viewportWidth.value = rect.width
+	}).exec()
+}
+const prepareNearbyPages = () => {
+	calendarPages.value = calendarPages.value.map((page, index) => ({
+		...page,
+		isReady: Math.abs(index - activePageIndex.value) <= preparedPageRadius
+	}))
+}
+const stabilizePages = () => {
+	const pages = [...calendarPages.value]
+	let activeIndex = activePageIndex.value
+	if (activeIndex < pageEdge) {
+		const firstDate = new getDate(pages[0].date)
+		const addedPages = Array.from({ length: pageBatchSize }, (_, index) => createMonthPage(offsetMonth(firstDate, index - pageBatchSize)))
+		pages.unshift(...addedPages)
+		activeIndex += pageBatchSize
+		pages.splice(activeIndex + pageBuffer + 1)
+	} else if (pages.length - activeIndex - 1 < pageEdge) {
+		const lastDate = new getDate(pages[pages.length - 1].date)
+		pages.push(...Array.from({ length: pageBatchSize }, (_, index) => createMonthPage(offsetMonth(lastDate, index + 1))))
+		const removeCount = pages.length - (pageBuffer * 2 + 1)
+		pages.splice(0, removeCount)
+		activeIndex -= removeCount
+	}
+	calendarPages.value = pages
+	activePageIndex.value = activeIndex
+}
+
+const applyHolidayResults = results => {
+	const nextHolidayMap = results.reduce((map, result) => Object.assign(map, buildHolidayMap(result.calendar)), {})
+	if (Object.keys(nextHolidayMap).length) {
+		holidayMap.value = { ...holidayMap.value, ...nextHolidayMap }
+		holidayVersion.value += 1
+	}
+}
+
+const flushHolidayResults = () => {
+	if (pendingHolidayResults.length) applyHolidayResults(pendingHolidayResults.splice(0))
+}
 
 const loadHolidayYears = async dates => {
 	const years = [...new Set(dates.map(date => new getDate(date).getFullYear()))].filter(year => !attemptedHolidayYears.has(year))
 	if (!years.length) return
 	years.forEach(year => attemptedHolidayYears.add(year))
-	holidayLoadState.value = 'loading'
 	const results = await Promise.all(years.map(loadHolidayCalendar))
-	for (const result of results) {
-		holidayMap.value = { ...holidayMap.value, ...buildHolidayMap(result.calendar) }
+	if (isAnimating.value) {
+		pendingHolidayResults.push(...results)
+		return
 	}
-	holidayLoadState.value = results.some(result => result.source !== 'fallback') ? 'ready' : 'error'
+	applyHolidayResults(results)
 }
 
 const loadConfig = () => {
@@ -126,8 +205,14 @@ const loadConfig = () => {
 
 const init = () => {
 	const today = new getDate()
-	swiperList.value = updateSwiperList(today, [-2, -1, 0, 1, 2])
-	swiperActive.value = 2
+	currentMonth.value = createMonthPage(getMonthStart(today))
+	calendarPages.value = createCalendarPages(currentMonth.value)
+	activePageIndex.value = pageBuffer
+	prepareNearbyPages()
+	isAnimating.value = false
+	transitionDirection.value = 0
+	transitionDuration.value = 0
+	dragOffset.value = 0
 	selectedDate.value = today.dateFormat()
 	selectedDay.value = null
 }
@@ -167,24 +252,182 @@ const timeChange = time => {
 }
 const confirm = values => { setData.value.shiftsNum = values[0].value }
 
-const next = () => { swiperActive.value = swiperActive.value === 4 ? 0 : swiperActive.value + 1 }
-const prev = () => { swiperActive.value = swiperActive.value === 0 ? 4 : swiperActive.value - 1 }
-const goToday = () => {
-	init()
-	loadHolidayYears(swiperList.value)
+const getDampedOffset = offset => {
+	const width = getSlideWidth()
+	const distance = Math.abs(offset)
+	if (distance <= width) return offset
+	return Math.sign(offset) * (width + (distance - width) * 0.28)
 }
-const swiperChange = event => {
-	swiperActive.value = event.detail.current
-	const currentDate = new getDate(swiperList.value[swiperActive.value])
-	const offsetsByIndex = [[0, 1, 2, -2, -1], [-1, 0, 1, 2, -2], [-2, -1, 0, 1, 2], [2, -2, -1, 0, 1], [1, 2, -2, -1, 0]]
-	swiperList.value = updateSwiperList(currentDate, offsetsByIndex[swiperActive.value])
-	loadHolidayYears(swiperList.value)
+const getTransitionDuration = (distance, velocity = 0) => {
+	const ratio = Math.min(Math.abs(distance) / getSlideWidth(), 1)
+	const speedAdjustment = Math.min(Math.abs(velocity) * 90, 90)
+	return Math.max(180, Math.min(380, Math.round(150 + ratio * 230 - speedAdjustment)))
+}
+const setDragOffsetNow = offset => {
+	dragFrameToken += 1
+	dragFramePending = false
+	pendingDragOffset = offset
+	dragOffset.value = offset
+}
+const scheduleDragOffset = offset => {
+	// #ifndef H5
+	setDragOffsetNow(offset)
+	return
+	// #endif
+
+	// #ifdef H5
+	pendingDragOffset = offset
+	if (dragFramePending) return
+	dragFramePending = true
+	const token = dragFrameToken
+	const commit = () => {
+		if (token !== dragFrameToken) return
+		dragFramePending = false
+		dragOffset.value = pendingDragOffset
+	}
+	requestAnimationFrame(commit)
+	// #endif
+}
+const switchMonth = direction => {
+	if (isAnimating.value) return
+	if (!calendarPages.value[activePageIndex.value + direction]) return
+	transitionDirection.value = direction
+	transitionDuration.value = getTransitionDuration(getSlideWidth())
+	isAnimating.value = true
+	setDragOffsetNow(-direction * getSlideWidth())
+}
+const next = () => { switchMonth(1) }
+const prev = () => { switchMonth(-1) }
+const goToday = () => {
+	if (isAnimating.value) return
+	init()
+	loadHolidayYears(calendarPages.value.map(page => page.date))
+}
+const resetDrag = (velocity = 0) => {
+	if (isAnimating.value) return
+	transitionDirection.value = 0
+	transitionDuration.value = getTransitionDuration(Math.abs(dragOffset.value), velocity)
+	isAnimating.value = true
+	setDragOffsetNow(0)
+}
+const getPointerPosition = point => {
+	const x = point?.pageX ?? point?.clientX ?? point?.x
+	const y = point?.pageY ?? point?.clientY ?? point?.y
+	return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null
+}
+const startDrag = (point, input) => {
+	const position = getPointerPosition(point)
+	if (!position || isAnimating.value || dragState.active) return
+	dragState.startX = position.x
+	dragState.startY = position.y
+	dragState.startTime = Date.now()
+	dragState.mode = ''
+	dragState.input = input
+	dragState.active = true
+}
+const updateDrag = point => {
+	const position = getPointerPosition(point)
+	if (!position || isAnimating.value || !dragState.active || dragState.mode === 'vertical') return
+	const deltaX = position.x - dragState.startX
+	const deltaY = position.y - dragState.startY
+	if (!dragState.mode) {
+		if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < 8) return
+		dragState.mode = Math.abs(deltaX) > Math.abs(deltaY) ? 'horizontal' : 'vertical'
+	}
+	if (dragState.mode === 'horizontal') scheduleDragOffset(getDampedOffset(deltaX))
+}
+const finishDrag = point => {
+	if (isAnimating.value || !dragState.active) return
+	const mode = dragState.mode
+	dragState.active = false
+	dragState.input = ''
+	if (mode !== 'horizontal') return
+	const position = getPointerPosition(point)
+	const deltaX = (position?.x ?? dragState.startX) - dragState.startX
+	const elapsed = Math.max(Date.now() - dragState.startTime, 1)
+	const velocity = deltaX / elapsed
+	const currentOffset = getDampedOffset(deltaX)
+	setDragOffsetNow(currentOffset)
+	const shouldSwitch = Math.abs(deltaX) >= Math.max(switchDistanceMin, getSlideWidth() * switchDistanceRatio) || Math.abs(velocity) >= switchVelocity
+	if (!shouldSwitch) {
+		resetDrag(velocity)
+		return
+	}
+	transitionDirection.value = deltaX < 0 ? 1 : -1
+	transitionDuration.value = getTransitionDuration(Math.abs(-transitionDirection.value * getSlideWidth() - currentOffset), velocity)
+	isAnimating.value = true
+	setDragOffsetNow(-transitionDirection.value * getSlideWidth())
+}
+const cancelDrag = () => {
+	if (!dragState.active || isAnimating.value) return
+	const shouldReset = dragState.mode === 'horizontal'
+	dragState.active = false
+	dragState.input = ''
+	if (shouldReset) resetDrag()
+}
+const abortInteraction = () => {
+	dragState.active = false
+	dragState.input = ''
+	transitionDirection.value = 0
+	setDragOffsetNow(0)
+	if (!isAnimating.value) return
+	transitionEnabled.value = false
+	nextTick(() => {
+		transitionEnabled.value = true
+		isAnimating.value = false
+	})
+}
+const onTouchStart = event => startDrag(event.touches?.[0], 'touch')
+const onTouchMove = event => updateDrag(event.touches?.[0] || event.changedTouches?.[0])
+const onTouchEnd = event => finishDrag(event.changedTouches?.[0])
+const onTouchCancel = () => cancelDrag()
+const onMouseDown = event => {
+	if (event.button !== 0) return
+	event.preventDefault?.()
+	startDrag(event, 'mouse')
+}
+const onMouseMove = event => {
+	if (dragState.input === 'mouse') updateDrag(event)
+}
+const onMouseUp = event => {
+	if (dragState.input === 'mouse') finishDrag(event)
+}
+const onMouseLeave = () => {
+	if (dragState.input === 'mouse') cancelDrag()
+}
+const onTransitionEnd = () => {
+	if (!isAnimating.value) return
+	if (transitionDirection.value) {
+		activePageIndex.value += transitionDirection.value
+		transitionEnabled.value = false
+		stabilizePages()
+		prepareNearbyPages()
+		currentMonth.value = calendarPages.value[activePageIndex.value]
+		setDragOffsetNow(0)
+		transitionDirection.value = 0
+		nextTick(() => {
+			transitionEnabled.value = true
+			isAnimating.value = false
+			flushHolidayResults()
+			loadHolidayYears(calendarPages.value.map(page => page.date))
+		})
+		return
+	}
+	isAnimating.value = false
 }
 
 onLoad(() => {
 	loadConfig()
 	init()
-	loadHolidayYears(swiperList.value)
+	loadHolidayYears(calendarPages.value.map(page => page.date))
+})
+
+onReady(() => {
+	nextTick(refreshViewportWidth)
+})
+
+onHide(() => {
+	abortInteraction()
 })
 
 onShareAppMessage(() => ({
@@ -202,8 +445,9 @@ onShareAppMessage(() => ({
 .toolbar-subtitle { margin-top:8rpx; color:#aa7f8d; font-size:23rpx; }
 .today-button { padding:13rpx 24rpx; border:1rpx solid #efc2d1; border-radius:30rpx; color:#c9577d; background:rgba(255,255,255,.78); font-size:25rpx; box-shadow:0 6rpx 18rpx rgba(189, 102, 136, .12); }
 .today-button--pressed, .add-config--pressed, .setting-item--pressed { opacity:.72; transform:scale(.98); }
-.swiper { position:relative; z-index:1; height:1000rpx; }
-.swiper-item { padding:8rpx 0 28rpx; }
+.calendar-viewport { position:relative; z-index:1; height:1000rpx; overflow:hidden; touch-action:pan-y; user-select:none; -webkit-user-select:none; -webkit-user-drag:none; }
+.calendar-track { display:flex; backface-visibility:hidden; will-change:transform; }.calendar-track--animating { transition-property:transform; transition-timing-function:cubic-bezier(.22,.61,.36,1); }
+.calendar-slide { box-sizing:border-box; flex:0 0 var(--calendar-slide-width); width:var(--calendar-slide-width); padding:8rpx 20rpx 28rpx; }
 .calendar-content { display:block; }
 .calendar-middle-action { position:absolute; right:40rpx; bottom:-42rpx; z-index:2; }
 .calendar-summary { position:relative; z-index:1; margin:0rpx 0 2rpx; padding:24rpx; border:1rpx solid #f6dfe8; border-radius:24rpx; background:linear-gradient(135deg,#fff8fb,#fff); box-shadow:0 10rpx 22rpx rgba(197,110,143,.08); }.summary-heading,.summary-status,.rule-overview { display:flex; align-items:center; justify-content:space-between; }.summary-heading > view { flex:1; min-width:0; }.summary-title,.summary-subtitle { display:block; }.summary-title { color:#643f4c; font-size:28rpx; font-weight:700; }.summary-subtitle { overflow:hidden; margin-top:6rpx; color:#b18b98; font-size:21rpx; text-overflow:ellipsis; white-space:nowrap; }.summary-date { flex:none; margin-left:16rpx; padding:7rpx 13rpx; border-radius:20rpx; color:#c95d83; background:#fff0f5; font-size:22rpx; }.summary-status { margin-top:18rpx; justify-content:flex-start; gap:12rpx; }.summary-lunar { overflow:hidden; max-width:56%; color:#8e6875; font-size:24rpx; text-overflow:ellipsis; white-space:nowrap; }.status-pill { padding:7rpx 14rpx; border-radius:18rpx; font-size:21rpx; }.status-pill.is-duty { color:#c9577d; background:#fff0f4; }.status-pill.is-vacation { color:#318764; background:#eff9f4; }.status-pill.is-workday { color:#61708d; background:#f2f3f8; }.status-pill.is-normal { color:#a97989; background:#faeff3; }.summary-empty { display:flex; align-items:center; gap:12rpx; min-height:58rpx; margin-top:16rpx; color:#aa8792; font-size:22rpx; line-height:1.5; }.rule-overview { gap:18rpx; margin-top:20rpx; padding-top:18rpx; border-top:1rpx dashed #f3dbe4; }.rule-overview view { display:flex; flex:1; flex-direction:column; min-width:0; }.rule-overview text { color:#bd98a4; font-size:20rpx; }.rule-overview .rule-value { overflow:hidden; margin-top:5rpx; color:#80505f; font-size:23rpx; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
@@ -218,5 +462,6 @@ onShareAppMessage(() => ({
 .setting-label, .setting-tip { display:block; }.setting-label { color:#543540; font-size:29rpx; font-weight:600; }.setting-tip { margin-top:7rpx; color:#b69aa4; font-size:22rpx; }
 .setting-value { display:flex; align-items:center; gap:8rpx; max-width:48%; color:#c9577d; font-size:27rpx; }.setting-value text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .panel-actions { display:flex; margin-top:34rpx; }
-.holiday-load-tip { display:block; margin-top:16rpx; color:#bd98a4; font-size:20rpx; line-height:1.5; }
+.calendar-animation-signal { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; animation:calendar-track-finish .32s linear; }
+@keyframes calendar-track-finish { from { transform:translateX(0); } to { transform:translateX(1px); } }
 </style>

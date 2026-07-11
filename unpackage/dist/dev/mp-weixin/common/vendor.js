@@ -7215,9 +7215,9 @@ function isConsoleWritable() {
   return isWritable;
 }
 function initRuntimeSocketService() {
-  const hosts = "172.20.10.3,10.160.7.235,127.0.0.1";
+  const hosts = "192.168.1.35,10.160.7.235,127.0.0.1";
   const port = "8090";
-  const id = "mp-weixin_RQ4VPA";
+  const id = "mp-weixin_XIeCrK";
   const lazy = typeof swan !== "undefined";
   let restoreError = lazy ? () => {
   } : initOnError();
@@ -8182,8 +8182,18 @@ const onLoad = /* @__PURE__ */ createLifeCycleHook(
   2
   /* HookFlags.PAGE */
 );
+const onReady = /* @__PURE__ */ createLifeCycleHook(
+  ON_READY,
+  2
+  /* HookFlags.PAGE */
+);
 const onUnload = /* @__PURE__ */ createLifeCycleHook(
   ON_UNLOAD,
+  2
+  /* HookFlags.PAGE */
+);
+const onBackPress = /* @__PURE__ */ createLifeCycleHook(
+  ON_BACK_PRESS,
   2
   /* HookFlags.PAGE */
 );
@@ -8205,14 +8215,16 @@ exports.index = index;
 exports.n = n;
 exports.nextTick$1 = nextTick$1;
 exports.o = o;
+exports.onBackPress = onBackPress;
 exports.onBeforeUnmount = onBeforeUnmount;
+exports.onHide = onHide;
 exports.onLoad = onLoad;
 exports.onMounted = onMounted;
 exports.onPageHide = onPageHide;
 exports.onPageShow = onPageShow;
+exports.onReady = onReady;
 exports.onShareAppMessage = onShareAppMessage;
 exports.onUnload = onUnload;
-exports.onUnmounted = onUnmounted;
 exports.p = p;
 exports.r = r;
 exports.reactive = reactive;

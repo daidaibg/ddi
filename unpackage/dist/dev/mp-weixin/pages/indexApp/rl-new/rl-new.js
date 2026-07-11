@@ -20,13 +20,27 @@ if (!Math) {
   (_easycom_u_icon + RlNewItem + _easycom_u_button + _easycom_u_popup + _easycom_u_calendar + _easycom_u_select)();
 }
 const RlNewItem = () => "./rl-new-item.js";
-const duration = 650;
+const switchDistanceRatio = 0.22;
+const switchDistanceMin = 56;
+const switchVelocity = 0.45;
+const pageBuffer = 6;
+const pageEdge = 3;
+const pageBatchSize = 4;
+const preparedPageRadius = 2;
 const _sfc_main = {
   __name: "rl-new",
   setup(__props) {
     const defaultConfig = { shiftsNum: 0, time: null, timeData: null, timestamp: null };
-    const swiperActive = common_vendor.ref(2);
-    const swiperList = common_vendor.ref([]);
+    const currentMonth = common_vendor.ref(null);
+    const calendarPages = common_vendor.ref([]);
+    const activePageIndex = common_vendor.ref(6);
+    const isAnimating = common_vendor.ref(false);
+    const transitionDirection = common_vendor.ref(0);
+    const transitionEnabled = common_vendor.ref(true);
+    const transitionDuration = common_vendor.ref(0);
+    const dragOffset = common_vendor.ref(0);
+    const viewportWidth = common_vendor.ref(common_vendor.index.getSystemInfoSync().windowWidth);
+    const dragState = { startX: 0, startY: 0, startTime: 0, mode: "", input: "", active: false };
     const selectedDate = common_vendor.ref(new util_getDate.getDate().dateFormat());
     const selectedDay = common_vendor.ref(null);
     const configShow = common_vendor.ref(false);
@@ -34,21 +48,79 @@ const _sfc_main = {
     const selectShow = common_vendor.ref(false);
     const setData = common_vendor.ref({ ...defaultConfig });
     const holidayMap = common_vendor.ref({});
-    const holidayLoadState = common_vendor.ref("idle");
+    const holidayVersion = common_vendor.ref(0);
     const attemptedHolidayYears = /* @__PURE__ */ new Set();
+    const pendingHolidayResults = [];
     const shiftOptions = Array.from({ length: 31 }, (_, index) => ({ value: index + 1, label: index + 1 }));
-    const updateSwiperList = (date, offsets) => offsets.map((offset) => date.getOffsetMonth(offset).format);
+    const getMonthStart = (date) => new util_getDate.getDate(`${date.getFullYear()}/${date.getMonth()}/1`);
+    const createMonthPage = (date) => ({
+      id: `${date.getFullYear()}-${String(date.getMonth()).padStart(2, "0")}`,
+      date: date.dateFormat(),
+      isReady: false
+    });
+    const offsetMonth = (date, offset) => getMonthStart(new util_getDate.getDate(date.getOffsetMonth(offset).format));
+    const createCalendarPages = (month) => Array.from({ length: pageBuffer * 2 + 1 }, (_, index) => createMonthPage(offsetMonth(new util_getDate.getDate(month.date), index - pageBuffer)));
+    const getSlideWidth = () => viewportWidth.value || common_vendor.index.getSystemInfoSync().windowWidth;
+    const viewportStyle = common_vendor.computed(() => ({ "--calendar-slide-width": `${getSlideWidth()}px` }));
+    const trackStyle = common_vendor.computed(() => ({
+      width: `${calendarPages.value.length * getSlideWidth()}px`,
+      transform: `translate3d(${-activePageIndex.value * getSlideWidth() + dragOffset.value}px,0,0)`,
+      transitionDuration: isAnimating.value && transitionEnabled.value ? `${transitionDuration.value}ms` : "0ms"
+    }));
+    const animationSignalStyle = common_vendor.computed(() => ({ animationDuration: `${transitionDuration.value}ms` }));
+    const refreshViewportWidth = () => {
+      common_vendor.index.createSelectorQuery().select(".calendar-viewport").boundingClientRect((rect) => {
+        if (rect == null ? void 0 : rect.width)
+          viewportWidth.value = rect.width;
+      }).exec();
+    };
+    const prepareNearbyPages = () => {
+      calendarPages.value = calendarPages.value.map((page, index) => ({
+        ...page,
+        isReady: Math.abs(index - activePageIndex.value) <= preparedPageRadius
+      }));
+    };
+    const stabilizePages = () => {
+      const pages = [...calendarPages.value];
+      let activeIndex = activePageIndex.value;
+      if (activeIndex < pageEdge) {
+        const firstDate = new util_getDate.getDate(pages[0].date);
+        const addedPages = Array.from({ length: pageBatchSize }, (_, index) => createMonthPage(offsetMonth(firstDate, index - pageBatchSize)));
+        pages.unshift(...addedPages);
+        activeIndex += pageBatchSize;
+        pages.splice(activeIndex + pageBuffer + 1);
+      } else if (pages.length - activeIndex - 1 < pageEdge) {
+        const lastDate = new util_getDate.getDate(pages[pages.length - 1].date);
+        pages.push(...Array.from({ length: pageBatchSize }, (_, index) => createMonthPage(offsetMonth(lastDate, index + 1))));
+        const removeCount = pages.length - (pageBuffer * 2 + 1);
+        pages.splice(0, removeCount);
+        activeIndex -= removeCount;
+      }
+      calendarPages.value = pages;
+      activePageIndex.value = activeIndex;
+    };
+    const applyHolidayResults = (results) => {
+      const nextHolidayMap = results.reduce((map, result) => Object.assign(map, util_rq.buildHolidayMap(result.calendar)), {});
+      if (Object.keys(nextHolidayMap).length) {
+        holidayMap.value = { ...holidayMap.value, ...nextHolidayMap };
+        holidayVersion.value += 1;
+      }
+    };
+    const flushHolidayResults = () => {
+      if (pendingHolidayResults.length)
+        applyHolidayResults(pendingHolidayResults.splice(0));
+    };
     const loadHolidayYears = async (dates) => {
       const years = [...new Set(dates.map((date) => new util_getDate.getDate(date).getFullYear()))].filter((year) => !attemptedHolidayYears.has(year));
       if (!years.length)
         return;
       years.forEach((year) => attemptedHolidayYears.add(year));
-      holidayLoadState.value = "loading";
       const results = await Promise.all(years.map(util_rq.loadHolidayCalendar));
-      for (const result of results) {
-        holidayMap.value = { ...holidayMap.value, ...util_rq.buildHolidayMap(result.calendar) };
+      if (isAnimating.value) {
+        pendingHolidayResults.push(...results);
+        return;
       }
-      holidayLoadState.value = results.some((result) => result.source !== "fallback") ? "ready" : "error";
+      applyHolidayResults(results);
     };
     const loadConfig = () => {
       const savedConfig = common_vendor.index.getStorageSync("snow-rl-config");
@@ -56,8 +128,14 @@ const _sfc_main = {
     };
     const init = () => {
       const today = new util_getDate.getDate();
-      swiperList.value = updateSwiperList(today, [-2, -1, 0, 1, 2]);
-      swiperActive.value = 2;
+      currentMonth.value = createMonthPage(getMonthStart(today));
+      calendarPages.value = createCalendarPages(currentMonth.value);
+      activePageIndex.value = pageBuffer;
+      prepareNearbyPages();
+      isAnimating.value = false;
+      transitionDirection.value = 0;
+      transitionDuration.value = 0;
+      dragOffset.value = 0;
       selectedDate.value = today.dateFormat();
       selectedDay.value = null;
     };
@@ -101,27 +179,194 @@ const _sfc_main = {
     const confirm = (values) => {
       setData.value.shiftsNum = values[0].value;
     };
+    const getDampedOffset = (offset) => {
+      const width = getSlideWidth();
+      const distance = Math.abs(offset);
+      if (distance <= width)
+        return offset;
+      return Math.sign(offset) * (width + (distance - width) * 0.28);
+    };
+    const getTransitionDuration = (distance, velocity = 0) => {
+      const ratio = Math.min(Math.abs(distance) / getSlideWidth(), 1);
+      const speedAdjustment = Math.min(Math.abs(velocity) * 90, 90);
+      return Math.max(180, Math.min(380, Math.round(150 + ratio * 230 - speedAdjustment)));
+    };
+    const setDragOffsetNow = (offset) => {
+      dragOffset.value = offset;
+    };
+    const scheduleDragOffset = (offset) => {
+      setDragOffsetNow(offset);
+      return;
+    };
+    const switchMonth = (direction) => {
+      if (isAnimating.value)
+        return;
+      if (!calendarPages.value[activePageIndex.value + direction])
+        return;
+      transitionDirection.value = direction;
+      transitionDuration.value = getTransitionDuration(getSlideWidth());
+      isAnimating.value = true;
+      setDragOffsetNow(-direction * getSlideWidth());
+    };
     const next = () => {
-      swiperActive.value = swiperActive.value === 4 ? 0 : swiperActive.value + 1;
+      switchMonth(1);
     };
     const prev = () => {
-      swiperActive.value = swiperActive.value === 0 ? 4 : swiperActive.value - 1;
+      switchMonth(-1);
     };
     const goToday = () => {
+      if (isAnimating.value)
+        return;
       init();
-      loadHolidayYears(swiperList.value);
+      loadHolidayYears(calendarPages.value.map((page) => page.date));
     };
-    const swiperChange = (event) => {
-      swiperActive.value = event.detail.current;
-      const currentDate = new util_getDate.getDate(swiperList.value[swiperActive.value]);
-      const offsetsByIndex = [[0, 1, 2, -2, -1], [-1, 0, 1, 2, -2], [-2, -1, 0, 1, 2], [2, -2, -1, 0, 1], [1, 2, -2, -1, 0]];
-      swiperList.value = updateSwiperList(currentDate, offsetsByIndex[swiperActive.value]);
-      loadHolidayYears(swiperList.value);
+    const resetDrag = (velocity = 0) => {
+      if (isAnimating.value)
+        return;
+      transitionDirection.value = 0;
+      transitionDuration.value = getTransitionDuration(Math.abs(dragOffset.value), velocity);
+      isAnimating.value = true;
+      setDragOffsetNow(0);
+    };
+    const getPointerPosition = (point) => {
+      const x = (point == null ? void 0 : point.pageX) ?? (point == null ? void 0 : point.clientX) ?? (point == null ? void 0 : point.x);
+      const y = (point == null ? void 0 : point.pageY) ?? (point == null ? void 0 : point.clientY) ?? (point == null ? void 0 : point.y);
+      return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
+    };
+    const startDrag = (point, input) => {
+      const position = getPointerPosition(point);
+      if (!position || isAnimating.value || dragState.active)
+        return;
+      dragState.startX = position.x;
+      dragState.startY = position.y;
+      dragState.startTime = Date.now();
+      dragState.mode = "";
+      dragState.input = input;
+      dragState.active = true;
+    };
+    const updateDrag = (point) => {
+      const position = getPointerPosition(point);
+      if (!position || isAnimating.value || !dragState.active || dragState.mode === "vertical")
+        return;
+      const deltaX = position.x - dragState.startX;
+      const deltaY = position.y - dragState.startY;
+      if (!dragState.mode) {
+        if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < 8)
+          return;
+        dragState.mode = Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
+      }
+      if (dragState.mode === "horizontal")
+        scheduleDragOffset(getDampedOffset(deltaX));
+    };
+    const finishDrag = (point) => {
+      if (isAnimating.value || !dragState.active)
+        return;
+      const mode = dragState.mode;
+      dragState.active = false;
+      dragState.input = "";
+      if (mode !== "horizontal")
+        return;
+      const position = getPointerPosition(point);
+      const deltaX = ((position == null ? void 0 : position.x) ?? dragState.startX) - dragState.startX;
+      const elapsed = Math.max(Date.now() - dragState.startTime, 1);
+      const velocity = deltaX / elapsed;
+      const currentOffset = getDampedOffset(deltaX);
+      setDragOffsetNow(currentOffset);
+      const shouldSwitch = Math.abs(deltaX) >= Math.max(switchDistanceMin, getSlideWidth() * switchDistanceRatio) || Math.abs(velocity) >= switchVelocity;
+      if (!shouldSwitch) {
+        resetDrag(velocity);
+        return;
+      }
+      transitionDirection.value = deltaX < 0 ? 1 : -1;
+      transitionDuration.value = getTransitionDuration(Math.abs(-transitionDirection.value * getSlideWidth() - currentOffset), velocity);
+      isAnimating.value = true;
+      setDragOffsetNow(-transitionDirection.value * getSlideWidth());
+    };
+    const cancelDrag = () => {
+      if (!dragState.active || isAnimating.value)
+        return;
+      const shouldReset = dragState.mode === "horizontal";
+      dragState.active = false;
+      dragState.input = "";
+      if (shouldReset)
+        resetDrag();
+    };
+    const abortInteraction = () => {
+      dragState.active = false;
+      dragState.input = "";
+      transitionDirection.value = 0;
+      setDragOffsetNow(0);
+      if (!isAnimating.value)
+        return;
+      transitionEnabled.value = false;
+      common_vendor.nextTick$1(() => {
+        transitionEnabled.value = true;
+        isAnimating.value = false;
+      });
+    };
+    const onTouchStart = (event) => {
+      var _a;
+      return startDrag((_a = event.touches) == null ? void 0 : _a[0], "touch");
+    };
+    const onTouchMove = (event) => {
+      var _a, _b;
+      return updateDrag(((_a = event.touches) == null ? void 0 : _a[0]) || ((_b = event.changedTouches) == null ? void 0 : _b[0]));
+    };
+    const onTouchEnd = (event) => {
+      var _a;
+      return finishDrag((_a = event.changedTouches) == null ? void 0 : _a[0]);
+    };
+    const onTouchCancel = () => cancelDrag();
+    const onMouseDown = (event) => {
+      var _a;
+      if (event.button !== 0)
+        return;
+      (_a = event.preventDefault) == null ? void 0 : _a.call(event);
+      startDrag(event, "mouse");
+    };
+    const onMouseMove = (event) => {
+      if (dragState.input === "mouse")
+        updateDrag(event);
+    };
+    const onMouseUp = (event) => {
+      if (dragState.input === "mouse")
+        finishDrag(event);
+    };
+    const onMouseLeave = () => {
+      if (dragState.input === "mouse")
+        cancelDrag();
+    };
+    const onTransitionEnd = () => {
+      if (!isAnimating.value)
+        return;
+      if (transitionDirection.value) {
+        activePageIndex.value += transitionDirection.value;
+        transitionEnabled.value = false;
+        stabilizePages();
+        prepareNearbyPages();
+        currentMonth.value = calendarPages.value[activePageIndex.value];
+        setDragOffsetNow(0);
+        transitionDirection.value = 0;
+        common_vendor.nextTick$1(() => {
+          transitionEnabled.value = true;
+          isAnimating.value = false;
+          flushHolidayResults();
+          loadHolidayYears(calendarPages.value.map((page) => page.date));
+        });
+        return;
+      }
+      isAnimating.value = false;
     };
     common_vendor.onLoad(() => {
       loadConfig();
       init();
-      loadHolidayYears(swiperList.value);
+      loadHolidayYears(calendarPages.value.map((page) => page.date));
+    });
+    common_vendor.onReady(() => {
+      common_vendor.nextTick$1(refreshViewportWidth);
+    });
+    common_vendor.onHide(() => {
+      abortInteraction();
     });
     common_vendor.onShareAppMessage(() => ({
       title: "私人小日历",
@@ -130,22 +375,24 @@ const _sfc_main = {
     return (_ctx, _cache) => {
       return common_vendor.e({
         a: common_vendor.o(goToday, "8b"),
-        b: common_vendor.f(swiperList.value, (item, k0, i0) => {
+        b: common_vendor.f(calendarPages.value, (item, k0, i0) => {
           return {
             a: "58292e92-1-" + i0 + "," + ("58292e92-0-" + i0),
-            b: common_vendor.o(openConfig, item),
-            c: common_vendor.o(clickDay, item),
-            d: common_vendor.o(next, item),
-            e: common_vendor.o(prev, item),
+            b: common_vendor.o(openConfig, item.id),
+            c: common_vendor.o(clickDay, item.id),
+            d: common_vendor.o(next, item.id),
+            e: common_vendor.o(prev, item.id),
             f: "58292e92-0-" + i0,
             g: common_vendor.p({
-              ["now-date"]: item,
+              ["now-date"]: item.date,
+              ["is-ready"]: item.isReady,
+              ["holiday-version"]: holidayVersion.value,
               ["selected-date"]: selectedDate.value,
               ["latest-date"]: setData.value.timestamp,
               ["shifts-num"]: setData.value.shiftsNum,
               ["holiday-map"]: holidayMap.value
             }),
-            h: item
+            h: item.id
           };
         }),
         c: common_vendor.p({
@@ -153,72 +400,84 @@ const _sfc_main = {
           color: "#ffffff",
           size: "38rpx"
         }),
-        d: swiperActive.value,
-        e: duration,
-        f: common_vendor.o(swiperChange, "37"),
-        g: common_vendor.t(selectedDay.value ? selectedDay.value.ncWeek : "选择日期查看排班状态"),
-        h: common_vendor.t(selectedDay.value ? `${selectedDay.value.cMonth} 月 ${selectedDay.value.cDay} 日` : "今日"),
-        i: selectedDay.value
+        d: isAnimating.value && transitionEnabled.value ? 1 : "",
+        e: common_vendor.s(trackStyle.value),
+        f: common_vendor.o(onTransitionEnd, "9b"),
+        g: isAnimating.value && transitionEnabled.value
+      }, isAnimating.value && transitionEnabled.value ? {
+        h: common_vendor.s(animationSignalStyle.value),
+        i: common_vendor.o(onTransitionEnd, "e3")
+      } : {}, {
+        j: common_vendor.s(viewportStyle.value),
+        k: common_vendor.o(onTouchStart, "5d"),
+        l: common_vendor.o(onTouchMove, "3a"),
+        m: common_vendor.o(onTouchEnd, "b3"),
+        n: common_vendor.o(onTouchCancel, "bc"),
+        o: common_vendor.o(onMouseDown, "13"),
+        p: common_vendor.o(onMouseMove, "b5"),
+        q: common_vendor.o(onMouseUp, "65"),
+        r: common_vendor.o(onMouseLeave, "d3"),
+        s: common_vendor.t(selectedDay.value ? selectedDay.value.ncWeek : "选择日期查看排班状态"),
+        t: common_vendor.t(selectedDay.value ? `${selectedDay.value.cMonth} 月 ${selectedDay.value.cDay} 日` : "今日"),
+        v: selectedDay.value
       }, selectedDay.value ? common_vendor.e({
-        j: common_vendor.t(selectedDay.value.lunarLabel),
-        k: selectedDay.value.isOnDuty
+        w: common_vendor.t(selectedDay.value.lunarLabel),
+        x: selectedDay.value.isOnDuty
       }, selectedDay.value.isOnDuty ? {} : selectedDay.value.isVacation ? {} : selectedDay.value.isCompensatoryLeave ? {} : {}, {
-        l: selectedDay.value.isVacation,
-        m: selectedDay.value.isCompensatoryLeave
+        y: selectedDay.value.isVacation,
+        z: selectedDay.value.isCompensatoryLeave
       }) : {
-        n: common_vendor.p({
+        A: common_vendor.p({
           name: "calendar",
           color: "#df8ca8",
           size: "30rpx"
         })
       }, {
-        o: common_vendor.t(setData.value.shiftsNum || "未设置"),
-        p: common_vendor.t(setData.value.time || "未设置"),
-        q: holidayLoadState.value === "error"
-      }, holidayLoadState.value === "error" ? {} : {}, {
-        r: common_vendor.t(setData.value.shiftsNum || "未设置"),
-        s: common_vendor.p({
+        B: common_vendor.t(setData.value.shiftsNum || "未设置"),
+        C: common_vendor.t(setData.value.time || "未设置"),
+        D: common_vendor.t(setData.value.shiftsNum || "未设置"),
+        E: common_vendor.p({
           name: "arrow-right",
           color: "#c8a4b0",
           size: "24rpx"
         }),
-        t: common_vendor.o(selectShiftNum, "cf"),
-        v: common_vendor.t(setData.value.time || "请选择"),
-        w: common_vendor.p({
+        F: common_vendor.o(selectShiftNum, "d6"),
+        G: common_vendor.t(setData.value.time || "请选择"),
+        H: common_vendor.p({
           name: "arrow-right",
           color: "#c8a4b0",
           size: "24rpx"
         }),
-        x: common_vendor.o(selectLatestDate, "69"),
-        y: common_vendor.o(clearConfig, "6b"),
-        z: common_vendor.p({
+        I: common_vendor.o(selectLatestDate, "68"),
+        J: common_vendor.o(clearConfig, "e1"),
+        K: common_vendor.p({
           plain: true,
           ["custom-style"]: "border-color:#efbfd0;color:#c9577d;background:#fff7fa;"
         }),
-        A: common_vendor.o(saveConfig, "24"),
-        B: common_vendor.p({
+        L: common_vendor.o(saveConfig, "62"),
+        M: common_vendor.p({
           type: "error",
           ["custom-style"]: "margin-left:20rpx;background:#dc6f95;border-color:#dc6f95;"
         }),
-        C: common_vendor.o(($event) => configShow.value = $event, "5c"),
-        D: common_vendor.p({
+        N: common_vendor.o(($event) => configShow.value = $event, "5d"),
+        O: common_vendor.p({
           mode: "bottom",
           round: "28",
           closeable: true,
           modelValue: configShow.value
         }),
-        E: common_vendor.o(timeChange, "88"),
-        F: common_vendor.o(($event) => calendarShow.value = $event, "50"),
-        G: common_vendor.p({
+        P: common_vendor.o(timeChange, "24"),
+        Q: common_vendor.o(($event) => calendarShow.value = $event, "c9"),
+        R: common_vendor.p({
           mode: "date",
           ["active-bg-color"]: "#dc6f95",
           ["btn-type"]: "error",
           ["max-date"]: "2050-01-01",
           modelValue: calendarShow.value
         }),
-        H: common_vendor.o(confirm, "92"),
-        I: common_vendor.o(($event) => selectShow.value = $event, "25"),
-        J: common_vendor.p({
+        S: common_vendor.o(confirm, "27"),
+        T: common_vendor.o(($event) => selectShow.value = $event, "bd"),
+        U: common_vendor.p({
           list: common_vendor.unref(shiftOptions),
           ["label-name"]: "value",
           mode: "single-column",

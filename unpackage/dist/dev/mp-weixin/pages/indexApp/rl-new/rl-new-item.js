@@ -12,14 +12,16 @@ if (!Math) {
   _easycom_u_icon();
 }
 const millisecondsPerDay = 24 * 60 * 60 * 1e3;
+const monthDataCacheLimit = 24;
 const _sfc_main = {
   __name: "rl-new-item",
-  props: { nowDate: { type: String, default: () => new util_getDate.getDate().dateFormat() }, selectedDate: { type: String, default: "" }, shiftsNum: { type: Number, default: 0 }, latestDate: { type: Number, default: null }, holidayMap: { type: Object, default: () => ({}) } },
+  props: { nowDate: { type: String, default: () => new util_getDate.getDate().dateFormat() }, isReady: { type: Boolean, default: true }, holidayVersion: { type: Number, default: 0 }, selectedDate: { type: String, default: "" }, shiftsNum: { type: Number, default: 0 }, latestDate: { type: Number, default: null }, holidayMap: { type: Object, default: () => ({}) } },
   emits: ["click-day", "next", "prev"],
   setup(__props, { emit: __emit }) {
     const props = __props;
     const emit = __emit;
     const weekList = ["一", "二", "三", "四", "五", "六", "日"];
+    const monthDataCache = /* @__PURE__ */ new Map();
     const nowYear = common_vendor.ref(0), nowMonth = common_vendor.ref(0), nowPeasant = common_vendor.ref({}), previousMonthDays = common_vendor.ref([]), currentMonthDays = common_vendor.ref([]), nextMonthDays = common_vendor.ref([]);
     const selectedDateKey = common_vendor.computed(() => props.selectedDate.replace(/\//g, "-"));
     const dateKey = (day) => `${day.cYear}-${day.cMonth}-${day.cDay}`;
@@ -34,86 +36,131 @@ const _sfc_main = {
       const isWeekend = [6, 7].includes(day.nWeek);
       const isOnDuty = Boolean(props.shiftsNum && props.latestDate && (isVacation || isWeekend && !isCompensatoryLeave) && Math.floor(Math.abs(props.latestDate - timestamp) / millisecondsPerDay) % props.shiftsNum === 0);
       const builtInHoliday = lunarHoliday || solarHoliday;
-      const lunarLabel = (calendarHoliday == null ? void 0 : calendarHoliday.displayText) || (builtInHoliday ? `${day.cYear} ${builtInHoliday.name}（安排待更新）` : day.IDayCn);
+      const lunarLabel = (calendarHoliday == null ? void 0 : calendarHoliday.displayText) || (builtInHoliday == null ? void 0 : builtInHoliday.name) || day.IDayCn;
       return { lunarLabel, isVacation, isCompensatoryLeave, isOnDuty };
     };
     const buildDay = (year, month, day) => {
       const lunarDay = util_lunarAlendar.calendar.solar2lunar(year, month, day);
       return { ...lunarDay, ...getHolidayData(lunarDay) };
     };
-    const init = () => {
+    const getMonthCache = (key) => {
+      const cached = monthDataCache.get(key);
+      if (!cached)
+        return null;
+      monthDataCache.delete(key);
+      monthDataCache.set(key, cached);
+      return cached;
+    };
+    const saveMonthCache = (key, value) => {
+      monthDataCache.set(key, value);
+      if (monthDataCache.size > monthDataCacheLimit)
+        monthDataCache.delete(monthDataCache.keys().next().value);
+    };
+    const buildMonthData = () => {
       const date = new util_getDate.getDate(props.nowDate);
-      nowYear.value = date.getFullYear();
-      nowMonth.value = date.getMonth();
-      nowPeasant.value = util_lunarAlendar.calendar.solar2lunar(nowYear.value, nowMonth.value, date.getDate());
-      const daysInMonth = util_getDate.getDate.getDays({ year: nowYear.value, month: nowMonth.value });
-      const firstWeekday = util_getDate.getDate.getMonthWeekBegin({ year: nowYear.value, month: nowMonth.value });
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const daysInMonth = util_getDate.getDate.getDays({ year, month });
+      const firstWeekday = util_getDate.getDate.getMonthWeekBegin({ year, month });
       const previousCount = Math.max(firstWeekday - 1, 0);
-      const [previousYear, previousMonth] = nowMonth.value === 1 ? [nowYear.value - 1, 12] : [nowYear.value, nowMonth.value - 1];
+      const [previousYear, previousMonth] = month === 1 ? [year - 1, 12] : [year, month - 1];
       const previousDaysInMonth = util_getDate.getDate.getDays({ year: previousYear, month: previousMonth });
-      previousMonthDays.value = Array.from({ length: previousCount }, (_, index) => buildDay(previousYear, previousMonth, previousDaysInMonth - previousCount + index + 1));
-      currentMonthDays.value = Array.from({ length: daysInMonth }, (_, index) => buildDay(nowYear.value, nowMonth.value, index + 1));
+      const previousDays = Array.from({ length: previousCount }, (_, index) => buildDay(previousYear, previousMonth, previousDaysInMonth - previousCount + index + 1));
+      const currentDays = Array.from({ length: daysInMonth }, (_, index) => buildDay(year, month, index + 1));
       const nextCount = 42 - previousCount - daysInMonth;
-      const [nextYear, nextMonth] = nowMonth.value === 12 ? [nowYear.value + 1, 1] : [nowYear.value, nowMonth.value + 1];
-      nextMonthDays.value = Array.from({ length: nextCount }, (_, index) => buildDay(nextYear, nextMonth, index + 1));
+      const [nextYear, nextMonth] = month === 12 ? [year + 1, 1] : [year, month + 1];
+      return {
+        nowYear: year,
+        nowMonth: month,
+        nowPeasant: util_lunarAlendar.calendar.solar2lunar(year, month, date.getDate()),
+        previousDays,
+        currentDays,
+        nextDays: Array.from({ length: nextCount }, (_, index) => buildDay(nextYear, nextMonth, index + 1))
+      };
+    };
+    const init = () => {
+      if (!props.isReady)
+        return;
+      const cacheKey = `${props.nowDate}|${props.shiftsNum}|${props.latestDate || ""}|${props.holidayVersion}`;
+      const monthData = getMonthCache(cacheKey) || buildMonthData();
+      if (!monthDataCache.has(cacheKey))
+        saveMonthCache(cacheKey, monthData);
+      nowYear.value = monthData.nowYear;
+      nowMonth.value = monthData.nowMonth;
+      nowPeasant.value = monthData.nowPeasant;
+      previousMonthDays.value = monthData.previousDays;
+      currentMonthDays.value = monthData.currentDays;
+      nextMonthDays.value = monthData.nextDays;
     };
     const dayClass = (day) => ({ "is-today": day.isToday, "is-selected": dateKey(day) === selectedDateKey.value, "is-duty": day.isOnDuty, "is-vacation": day.isVacation, "is-workday": day.isCompensatoryLeave });
     const selectDay = (day) => emit("click-day", day);
-    common_vendor.watch(() => [props.nowDate, props.shiftsNum, props.latestDate, props.holidayMap], init, { immediate: true });
+    common_vendor.watch(() => [props.nowDate, props.isReady, props.shiftsNum, props.latestDate, props.holidayVersion], init, { immediate: true });
     return (_ctx, _cache) => {
-      return {
-        a: common_vendor.p({
+      return common_vendor.e({
+        a: __props.isReady
+      }, __props.isReady ? {
+        b: common_vendor.p({
           name: "arrow-left",
           color: "#c9577d",
           size: "28rpx"
         }),
-        b: common_vendor.o(($event) => emit("prev"), "10"),
-        c: common_vendor.t(nowPeasant.value.Animal),
-        d: common_vendor.t(nowYear.value),
-        e: common_vendor.t(nowMonth.value),
-        f: common_vendor.p({
+        c: common_vendor.o(($event) => emit("prev"), "61"),
+        d: common_vendor.t(nowPeasant.value.Animal),
+        e: common_vendor.t(nowYear.value),
+        f: common_vendor.t(nowMonth.value),
+        g: common_vendor.p({
           name: "arrow-right",
           color: "#c9577d",
           size: "28rpx"
         }),
-        g: common_vendor.o(($event) => emit("next"), "31"),
-        h: common_vendor.f(weekList, (day, k0, i0) => {
+        h: common_vendor.o(($event) => emit("next"), "3e"),
+        i: common_vendor.f(weekList, (day, k0, i0) => {
           return {
             a: common_vendor.t(day),
             b: day,
             c: day === "六" || day === "日" ? 1 : ""
           };
         }),
-        i: common_vendor.f(previousMonthDays.value, (item, k0, i0) => {
+        j: common_vendor.f(previousMonthDays.value, (item, k0, i0) => {
           return {
             a: common_vendor.t(item.cDay),
             b: common_vendor.t(item.lunarLabel),
             c: `previous-${item.cYear}-${item.cMonth}-${item.cDay}`
           };
         }),
-        j: common_vendor.f(currentMonthDays.value, (item, k0, i0) => {
+        k: common_vendor.f(currentMonthDays.value, (item, k0, i0) => {
           return common_vendor.e({
             a: common_vendor.t(item.cDay),
             b: common_vendor.t(item.lunarLabel),
             c: item.isOnDuty
           }, item.isOnDuty ? {} : {}, {
             d: item.isVacation
-          }, item.isVacation ? {} : {}, {
-            e: item.isCompensatoryLeave
+          }, item.isVacation ? {
+            e: item.isOnDuty ? 1 : ""
+          } : {}, {
+            f: item.isCompensatoryLeave
           }, item.isCompensatoryLeave ? {} : {}, {
-            f: `current-${item.cDay}`,
-            g: common_vendor.n(dayClass(item)),
-            h: common_vendor.o(($event) => selectDay(item), `current-${item.cDay}`)
+            g: `current-${item.cDay}`,
+            h: common_vendor.n(dayClass(item)),
+            i: common_vendor.o(($event) => selectDay(item), `current-${item.cDay}`)
           });
         }),
-        k: common_vendor.f(nextMonthDays.value, (item, k0, i0) => {
+        l: common_vendor.f(nextMonthDays.value, (item, k0, i0) => {
           return {
             a: common_vendor.t(item.cDay),
             b: common_vendor.t(item.lunarLabel),
             c: `next-${item.cYear}-${item.cMonth}-${item.cDay}`
           };
         })
-      };
+      } : {
+        m: common_vendor.f(21, (item, k0, i0) => {
+          return {
+            a: item
+          };
+        })
+      }, {
+        n: !__props.isReady ? 1 : ""
+      });
     };
   }
 };

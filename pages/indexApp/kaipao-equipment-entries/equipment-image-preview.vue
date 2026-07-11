@@ -24,17 +24,43 @@
         </button>
       </view>
 
-      <scroll-view
-        class="preview-table-scroll"
-        scroll-x
-        scroll-y
-        :show-scrollbar="true"
+      <view
+        v-if="unsavedWarning"
+        class="preview-unsaved-warning"
       >
-        <view
+        当前预览可能包含尚未保存的修改。
+      </view>
+
+      <!--
+        微信小程序中不要让同一个 scroll-view 同时负责横向和纵向滚动。
+        外层只负责纵向，内层只负责横向，手势识别会稳定很多。
+      -->
+      <scroll-view
+        class="preview-vertical-scroll"
+        :style="previewVerticalScrollStyle"
+        :scroll-y="true"
+        :scroll-x="false"
+        :bounces="false"
+        :show-scrollbar="true"
+        :enhanced="true"
+        :nested-scroll-enabled="true"
+      >
+        <scroll-view
           v-if="layoutReady"
-          class="preview-table"
-          :style="previewTableStyle"
+          class="preview-horizontal-scroll"
+          :style="previewHorizontalScrollStyle"
+          :scroll-x="true"
+          :scroll-y="false"
+          :bounces="false"
+          :show-scrollbar="true"
+          :enhanced="true"
+          :nested-scroll-enabled="true"
+          :enable-flex="false"
         >
+          <view
+            class="preview-table"
+            :style="previewTableStyle"
+          >
           <!-- 表头 -->
           <view
             class="preview-row preview-header"
@@ -48,10 +74,12 @@
                 'index-cell': column.isIndex,
                 'part-cell': !column.isIndex,
               }"
-              :style="getCellStyle(
-                column.width,
-                tableLayout.header.height
-              )"
+              :style="
+                getCellStyle(
+                  column.width,
+                  tableLayout.header.height
+                )
+              "
             >
               <view class="line-list header-line-list">
                 <text
@@ -80,10 +108,12 @@
             <!-- 序号 -->
             <view
               class="preview-cell index-cell"
-              :style="getCellStyle(
-                TABLE.indexWidth,
-                rowLayout.height
-              )"
+              :style="
+                getCellStyle(
+                  TABLE.indexWidth,
+                  rowLayout.height
+                )
+              "
             >
               <text
                 class="index-text"
@@ -95,15 +125,17 @@
               </text>
             </view>
 
-            <!-- 普通内容列 -->
+            <!-- 内容列 -->
             <view
               v-for="cellLayout in rowLayout.cells"
               :key="cellLayout.key"
               class="preview-cell part-cell"
-              :style="getCellStyle(
-                TABLE.cellWidth,
-                rowLayout.height
-              )"
+              :style="
+                getCellStyle(
+                  TABLE.cellWidth,
+                  rowLayout.height
+                )
+              "
             >
               <view
                 v-if="cellLayout.hasContent"
@@ -112,7 +144,7 @@
                   height: `${cellLayout.contentHeight}px`,
                 }"
               >
-                <!-- 标题区域 -->
+                <!-- 标题 -->
                 <view
                   class="entry-title-block"
                   :style="{
@@ -137,7 +169,10 @@
 
                   <view class="line-list title-line-list">
                     <text
-                      v-for="(line, lineIndex) in cellLayout.titleLines"
+                      v-for="(
+                        line,
+                        lineIndex
+                      ) in cellLayout.titleLines"
                       :key="lineIndex"
                       class="text-line title-text-line"
                       :style="{
@@ -151,7 +186,7 @@
                   </view>
                 </view>
 
-                <!-- 描述区域 -->
+                <!-- 描述 -->
                 <view
                   v-if="cellLayout.descriptionLines.length"
                   class="line-list description-line-list"
@@ -179,7 +214,8 @@
               </view>
             </view>
           </view>
-        </view>
+          </view>
+        </scroll-view>
 
         <view
           v-else
@@ -192,6 +228,7 @@
       <view class="preview-toolbar">
         <button
           class="preview-tool download"
+          :class="{ disabled: downloading || !layoutReady }"
           aria-label="下载图片"
           :loading="downloading"
           :disabled="downloading || !layoutReady"
@@ -210,6 +247,7 @@
 
         <button
           class="preview-tool"
+          :class="{ disabled: downloading }"
           aria-label="关闭表格预览"
           :disabled="downloading"
           @tap="close"
@@ -228,10 +266,9 @@
 
   <!-- 测量和导出共用 Canvas -->
   <canvas
-    canvas-id="previewEntryCanvas"
+    id="previewEntryCanvas"
+    type="2d"
     class="preview-entry-canvas"
-    :width="canvasWidth"
-    :height="canvasHeight"
     :style="{
       width: `${canvasWidth}px`,
       height: `${canvasHeight}px`,
@@ -252,26 +289,21 @@ import {
 } from 'vue';
 
 /**
- * 所有配置先以 rpx 定义。
- *
- * 初始化时统一转换成 px。
- * 预览和 Canvas 导出都使用同一套 px 尺寸。
+ * 所有配置先使用 rpx 定义，
+ * 初始化后统一转换为 px。
  */
 const TABLE_RPX = {
   outerPadding: 16,
 
   indexWidth: 108,
-  cellWidth: 380,
+  cellWidth: 365,
 
   minHeaderHeight: 76,
   minCompactRowHeight: 104,
   minFullRowHeight: 156,
 
-  /**
-   * 左右使用完全相同的内边距。
-   */
-  cellPaddingX: 16,
-  cellPaddingY: 16,
+  cellPaddingX: 18,
+  cellPaddingY: 18,
 
   logoSize: 36,
   logoGap: 12,
@@ -289,10 +321,6 @@ const TABLE_RPX = {
 
   titleDescriptionGap: 12,
 
-  /**
-   * 只增加垂直安全距离，
-   * 不再从可用文字宽度中额外减值。
-   */
   textBottomSafety: 2,
 };
 
@@ -309,10 +337,14 @@ const COLORS = {
 const FONT_FAMILY =
   '"PingFang SC", "Microsoft YaHei", Arial, sans-serif';
 
+/**
+ * 预览直接使用线上地址。
+ * 导出时会先下载为本地临时文件。
+ */
 const seasonLogoMap = {
-  G1: '/static/img/kaipao/G/logo/G1.png',
-  G2: '/static/img/kaipao/G/logo/G2.png',
-  G3: '/static/img/kaipao/G/logo/G3.png',
+  G1: 'https://www.gaobug.com/img/static/kaipao/G/G1.png',
+  G2: 'https://www.gaobug.com/img/static/kaipao/G/G2.png',
+  G3: 'https://www.gaobug.com/img/static/kaipao/G/G3.png',
 };
 
 const props = defineProps({
@@ -335,6 +367,11 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+
+  unsavedWarning: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits([
@@ -348,6 +385,21 @@ const layoutReady = ref(false);
 
 const canvasWidth = ref(1);
 const canvasHeight = ref(1);
+
+// 微信小程序的 scroll-view 需要明确的像素尺寸。
+const previewViewportWidth = ref(320);
+const previewViewportHeight = ref(420);
+
+let canvasNode = null;
+let canvasContext = null;
+
+/**
+ * 保存已经下载过的线上图片临时路径。
+ *
+ * key：线上 URL
+ * value：微信本地临时路径
+ */
+const exportImageCache = new Map();
 
 function rpxToPx(value) {
   const result = Number(
@@ -365,15 +417,59 @@ function rpxToPx(value) {
   return Math.max(1, result);
 }
 
+function getWindowMetrics() {
+  try {
+    if (typeof uni.getWindowInfo === 'function') {
+      return uni.getWindowInfo();
+    }
+
+    if (
+      typeof wx !== 'undefined' &&
+      typeof wx.getWindowInfo === 'function'
+    ) {
+      return wx.getWindowInfo();
+    }
+
+    return {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function getSafeBottom(windowInfo) {
+  const safeAreaInsetsBottom =
+    Number(windowInfo.safeAreaInsets?.bottom);
+
+  if (Number.isFinite(safeAreaInsetsBottom)) {
+    return safeAreaInsetsBottom;
+  }
+
+  const windowHeight =
+    Number(windowInfo.windowHeight);
+
+  const safeAreaBottom =
+    Number(windowInfo.safeArea?.bottom);
+
+  if (
+    Number.isFinite(windowHeight) &&
+    Number.isFinite(safeAreaBottom)
+  ) {
+    return Math.max(
+      0,
+      windowHeight - safeAreaBottom
+    );
+  }
+
+  return 0;
+}
+
 const TABLE = reactive(
   Object.fromEntries(
     Object.entries(TABLE_RPX).map(
-      ([key, value]) => {
-        return [
-          key,
-          rpxToPx(value),
-        ];
-      }
+      ([key, value]) => [
+        key,
+        rpxToPx(value),
+      ]
     )
   )
 );
@@ -414,6 +510,47 @@ const previewTableStyle = computed(() => {
     padding: `${TABLE.outerPadding}px`,
   };
 });
+
+const previewVerticalScrollStyle = computed(() => ({
+  width: `${previewViewportWidth.value}px`,
+  height: `${previewViewportHeight.value}px`,
+}));
+
+const previewHorizontalScrollStyle = computed(() => {
+  const contentHeight = Math.max(
+    1,
+    tableLayout.value.height +
+      TABLE.outerPadding * 2
+  );
+
+  return {
+    width: `${previewViewportWidth.value}px`,
+    height: `${contentHeight}px`,
+  };
+});
+
+function updatePreviewViewport() {
+  const systemInfo = getWindowMetrics();
+  const windowWidth = Number(systemInfo.windowWidth) || 375;
+  const windowHeight = Number(systemInfo.windowHeight) || 667;
+  const safeBottom = getSafeBottom(systemInfo);
+
+  const modalWidth = Math.max(1, Math.floor(windowWidth * 0.98));
+  const modalHeight = Math.max(1, Math.floor(windowHeight * 0.94));
+
+  // 头部约 88rpx，底部工具栏约 86rpx，再预留边框误差。
+  const fixedHeight =
+    rpxToPx(88) +
+    rpxToPx(86) +
+    safeBottom +
+    4;
+
+  previewViewportWidth.value = modalWidth;
+  previewViewportHeight.value = Math.max(
+    180,
+    modalHeight - fixedHeight
+  );
+}
 
 function getRowCell(row, index) {
   return row?.cells?.[index] || {};
@@ -459,18 +596,12 @@ function getCellStyle(width, height) {
     minHeight: `${height}px`,
     maxHeight: `${height}px`,
 
-    /**
-     * 左右内边距完全相同。
-     */
     padding:
       `${TABLE.cellPaddingY}px ` +
       `${TABLE.cellPaddingX}px`,
   };
 }
 
-/**
- * 设置 Canvas 字体。
- */
 function setCanvasFont(
   ctx,
   fontSize,
@@ -482,7 +613,7 @@ function setCanvasFont(
   try {
     ctx.font = font;
   } catch (error) {
-    // 兼容旧版小程序 CanvasContext。
+    // 兼容旧版 CanvasContext。
   }
 
   if (
@@ -506,10 +637,7 @@ function measureTextWidth(ctx, text) {
 }
 
 /**
- * 使用 Canvas 真实宽度计算换行。
- *
- * 不再额外扣除右侧安全宽度，
- * 避免文字提前换行造成右侧空白较大。
+ * 使用 Canvas 的真实文字宽度计算换行。
  */
 function wrapCanvasText(
   ctx,
@@ -578,9 +706,6 @@ function wrapCanvasText(
     : [''];
 }
 
-/**
- * 表头布局。
- */
 function createHeaderLayout(ctx) {
   setCanvasFont(
     ctx,
@@ -647,9 +772,6 @@ function createHeaderLayout(ctx) {
   };
 }
 
-/**
- * 单元格布局。
- */
 function createCellLayout(
   ctx,
   row,
@@ -690,18 +812,10 @@ function createCellLayout(
   const logo =
     getSeasonLogo(cell.season);
 
-  /**
-   * 单元格内部的完整可用宽度。
-   * 左右内边距严格相等。
-   */
   const contentWidth =
     TABLE.cellWidth -
     TABLE.cellPaddingX * 2;
 
-  /**
-   * 标题图标存在时，只从标题文字区域
-   * 中扣除图标和间距。
-   */
   const titleAvailableWidth =
     contentWidth -
     (logo
@@ -751,9 +865,6 @@ function createCellLayout(
       400
     );
 
-    /**
-     * 描述使用整个内容区域宽度。
-     */
     descriptionLines =
       wrapCanvasText(
         ctx,
@@ -794,9 +905,6 @@ function createCellLayout(
   };
 }
 
-/**
- * 数据行布局。
- */
 function createRowLayout(
   ctx,
   row,
@@ -851,9 +959,6 @@ function createRowLayout(
   };
 }
 
-/**
- * 完整表格布局。
- */
 function createTableLayout(ctx) {
   const width =
     TABLE.indexWidth +
@@ -894,22 +999,83 @@ function createTableLayout(ctx) {
   };
 }
 
+function getCanvasNode() {
+  if (canvasNode && canvasContext) {
+    return Promise.resolve({
+      canvas: canvasNode,
+      ctx: canvasContext,
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    uni.createSelectorQuery()
+      .in(proxy)
+      .select('#previewEntryCanvas')
+      .fields({
+        node: true,
+        size: true,
+      })
+      .exec((result) => {
+        const canvasInfo =
+          result && result[0];
+
+        if (
+          !canvasInfo ||
+          !canvasInfo.node
+        ) {
+          reject(
+            new Error(
+              '未获取到 Canvas 2D 节点'
+            )
+          );
+          return;
+        }
+
+        canvasNode = canvasInfo.node;
+        canvasContext =
+          canvasNode.getContext('2d');
+
+        resolve({
+          canvas: canvasNode,
+          ctx: canvasContext,
+        });
+      });
+  });
+}
+
+function resizeCanvas(
+  canvas,
+  width,
+  height
+) {
+  canvas.width = Math.max(
+    1,
+    Math.ceil(width)
+  );
+
+  canvas.height = Math.max(
+    1,
+    Math.ceil(height)
+  );
+
+  canvasWidth.value =
+    canvas.width;
+
+  canvasHeight.value =
+    canvas.height;
+}
+
 async function rebuildLayout() {
   layoutReady.value = false;
 
   await nextTick();
 
   try {
-    const measureContext =
-      uni.createCanvasContext(
-        'previewEntryCanvas',
-        proxy
-      );
+    const { ctx } =
+      await getCanvasNode();
 
     tableLayout.value =
-      createTableLayout(
-        measureContext
-      );
+      createTableLayout(ctx);
 
     layoutReady.value = true;
   } catch (error) {
@@ -932,10 +1098,236 @@ async function rebuildLayout() {
   }
 }
 
+function isRemoteUrl(src) {
+  return /^https?:\/\//i.test(
+    String(src || '')
+  );
+}
+
+function isLocalTempPath(src) {
+  const path = String(src || '');
+
+  return (
+    path.startsWith('wxfile://') ||
+    path.startsWith('http://tmp/') ||
+    path.startsWith('https://tmp/') ||
+    path.startsWith('file://') ||
+    path.startsWith('_doc/') ||
+    path.startsWith('_downloads/')
+  );
+}
+
 /**
- * 加载导出图片。
+ * 下载一张线上图片并获得 Canvas 可绘制的本地临时路径。
  */
-function loadExportImages() {
+function downloadRemoteImage(src) {
+  if (!src) {
+    return Promise.resolve('');
+  }
+
+  const cachedPath =
+    exportImageCache.get(src);
+
+  if (cachedPath) {
+    return Promise.resolve(
+      cachedPath
+    );
+  }
+
+  return new Promise((resolve) => {
+    uni.downloadFile({
+      url: src,
+      timeout: 15000,
+
+      success(downloadResult) {
+        const statusCode = Number(
+          downloadResult.statusCode
+        );
+
+        const tempFilePath =
+          downloadResult.tempFilePath;
+
+        if (
+          statusCode < 200 ||
+          statusCode >= 300 ||
+          !tempFilePath
+        ) {
+          console.error(
+            '远程图片下载失败：HTTP 状态异常',
+            {
+              src,
+              statusCode,
+              downloadResult,
+            }
+          );
+
+          resolve('');
+          return;
+        }
+
+        /*
+         * 再调用一次 getImageInfo，
+         * 确认下载结果确实是可读取的图片。
+         */
+        uni.getImageInfo({
+          src: tempFilePath,
+
+          success(imageInfo) {
+            const drawablePath =
+              imageInfo.path ||
+              tempFilePath;
+
+            exportImageCache.set(
+              src,
+              drawablePath
+            );
+
+            resolve(drawablePath);
+          },
+
+          fail(error) {
+            console.error(
+              '远程文件已下载，但无法作为图片读取',
+              {
+                src,
+                tempFilePath,
+                error,
+              }
+            );
+
+            resolve('');
+          },
+        });
+      },
+
+      fail(error) {
+        console.error(
+          '远程图片下载失败',
+          {
+            src,
+            error,
+          }
+        );
+
+        resolve('');
+      },
+    });
+  });
+}
+
+/**
+ * 获取本地 static 图片的 Canvas 可绘制路径。
+ */
+function resolveLocalImage(src) {
+  if (!src) {
+    return Promise.resolve('');
+  }
+
+  if (isLocalTempPath(src)) {
+    return Promise.resolve(src);
+  }
+
+  return new Promise((resolve) => {
+    uni.getImageInfo({
+      src,
+
+      success(result) {
+        /*
+         * static 包内图片优先继续使用原始绝对路径。
+         * 临时图片则使用 getImageInfo 返回路径。
+         */
+        if (
+          String(src).startsWith(
+            '/static/'
+          )
+        ) {
+          resolve(src);
+          return;
+        }
+
+        resolve(
+          result.path || src
+        );
+      },
+
+      fail(error) {
+        console.error(
+          '本地图片读取失败',
+          {
+            src,
+            error,
+          }
+        );
+
+        resolve('');
+      },
+    });
+  });
+}
+
+/**
+ * 将任意图片地址转换为 Canvas 可绘制路径。
+ */
+function resolveCanvasImage(src) {
+  if (!src) {
+    return Promise.resolve('');
+  }
+
+  if (isRemoteUrl(src)) {
+    return downloadRemoteImage(src);
+  }
+
+  return resolveLocalImage(src);
+}
+
+/**
+ * 加载所有导出图片。
+ *
+ * imageMap 的 key 仍然是原始线上 URL，
+ * value 是下载后的微信本地临时路径。
+ */
+function createCanvasImage(
+  canvas,
+  src
+) {
+  return new Promise((resolve) => {
+    if (!src) {
+      resolve(null);
+      return;
+    }
+
+    const image =
+      canvas.createImage();
+
+    image.onload = () => {
+      resolve(image);
+    };
+
+    image.onerror = (error) => {
+      console.error(
+        'Canvas 2D 图片加载失败',
+        {
+          src,
+          error,
+        }
+      );
+
+      resolve(null);
+    };
+
+    image.src = src;
+  });
+}
+
+/**
+ * 下载并加载所有导出图片。
+ *
+ * imageMap 的 key 是原始 URL，
+ * value 是 Canvas 2D Image 对象。
+ */
+async function loadExportImages(
+  canvas
+) {
   const sources = new Set();
 
   tableLayout.value.rows.forEach(
@@ -952,57 +1344,37 @@ function loadExportImages() {
     }
   );
 
-  return Promise.all(
-    Array.from(sources).map(
-      (src) => {
-        return new Promise(
-          (resolve) => {
-            uni.getImageInfo({
-              src,
+  const items =
+    await Promise.all(
+      Array.from(sources).map(
+        async (src) => {
+          const drawablePath =
+            await resolveCanvasImage(src);
 
-              success() {
-                /**
-                 * 使用原始 /static 路径，
-                 * 避免 res.path 变成相对路径。
-                 */
-                resolve([
-                  src,
-                  src,
-                ]);
-              },
+          const image =
+            drawablePath
+              ? await createCanvasImage(
+                  canvas,
+                  drawablePath
+                )
+              : null;
 
-              fail(error) {
-                console.warn(
-                  '加载导出图片失败',
-                  src,
-                  error
-                );
-
-                resolve([
-                  src,
-                  '',
-                ]);
-              },
-            });
-          }
-        );
-      }
-    )
-  ).then((items) => {
-    return items.reduce(
-      (
-        imageMap,
-        [src, path]
-      ) => {
-        if (path) {
-          imageMap[src] = path;
+          return [src, image];
         }
-
-        return imageMap;
-      },
-      {}
+      )
     );
-  });
+
+  const imageMap = {};
+
+  items.forEach(
+    ([src, image]) => {
+      if (image) {
+        imageMap[src] = image;
+      }
+    }
+  );
+
+  return imageMap;
 }
 
 function withClipRect(
@@ -1014,16 +1386,13 @@ function withClipRect(
   callback
 ) {
   ctx.save();
-
   ctx.beginPath();
-
   ctx.rect(
     x,
     y,
     width,
     height
   );
-
   ctx.clip();
 
   try {
@@ -1041,8 +1410,8 @@ function drawTextLines(
   lineHeight,
   align = 'left'
 ) {
-  ctx.setTextAlign(align);
-  ctx.setTextBaseline('top');
+  ctx.textAlign = align;
+  ctx.textBaseline = 'top';
 
   lines.forEach(
     (line, lineIndex) => {
@@ -1057,9 +1426,6 @@ function drawTextLines(
   );
 }
 
-/**
- * 标题第一行中心与图标中心对齐。
- */
 function drawTitleLines(
   ctx,
   lines,
@@ -1067,8 +1433,8 @@ function drawTitleLines(
   y,
   lineHeight
 ) {
-  ctx.setTextAlign('left');
-  ctx.setTextBaseline('middle');
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
 
   lines.forEach(
     (line, lineIndex) => {
@@ -1088,9 +1454,8 @@ function drawBackground(
   ctx,
   layout
 ) {
-  ctx.setFillStyle(
-    COLORS.background
-  );
+  ctx.fillStyle =
+    COLORS.background;
 
   ctx.fillRect(
     0,
@@ -1106,9 +1471,8 @@ function drawHeader(
 ) {
   const header = layout.header;
 
-  ctx.setFillStyle(
-    COLORS.headerBackground
-  );
+  ctx.fillStyle =
+    COLORS.headerBackground;
 
   ctx.fillRect(
     0,
@@ -1117,9 +1481,8 @@ function drawHeader(
     header.height
   );
 
-  ctx.setFillStyle(
-    COLORS.headerText
-  );
+  ctx.fillStyle =
+    COLORS.headerText;
 
   setCanvasFont(
     ctx,
@@ -1172,9 +1535,8 @@ function drawIndexCell(
   rowLayout,
   top
 ) {
-  ctx.setFillStyle(
-    COLORS.indexText
-  );
+  ctx.fillStyle =
+    COLORS.indexText;
 
   setCanvasFont(
     ctx,
@@ -1182,8 +1544,8 @@ function drawIndexCell(
     600
   );
 
-  ctx.setTextAlign('center');
-  ctx.setTextBaseline('middle');
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
 
   withClipRect(
     ctx,
@@ -1221,24 +1583,14 @@ function drawEntryCell(
     TABLE.cellWidth,
     rowHeight,
     () => {
-      /**
-       * 左侧起点严格等于左内边距。
-       */
       const contentLeft =
         left +
         TABLE.cellPaddingX;
 
-      /**
-       * 右侧终点严格等于：
-       * left + cellWidth - cellPaddingX。
-       */
       const contentWidth =
         TABLE.cellWidth -
         TABLE.cellPaddingX * 2;
 
-      /**
-       * 整个内容块在单元格中垂直居中。
-       */
       const contentTop =
         top +
         Math.max(
@@ -1248,6 +1600,10 @@ function drawEntryCell(
             2
         );
 
+      /*
+       * cellLayout.logo 是线上 URL。
+       * imagePaths[线上 URL] 是下载后的本地路径。
+       */
       const logoPath =
         cellLayout.logo
           ? imagePaths[
@@ -1275,18 +1631,29 @@ function drawEntryCell(
           : 0);
 
       if (logoPath) {
-        ctx.drawImage(
-          logoPath,
-          contentLeft,
-          contentTop,
-          TABLE.logoSize,
-          TABLE.logoSize
-        );
+        try {
+          ctx.drawImage(
+            logoPath,
+            contentLeft,
+            contentTop,
+            TABLE.logoSize,
+            TABLE.logoSize
+          );
+        } catch (error) {
+          console.error(
+            'Canvas 绘制图标失败',
+            {
+              originalUrl:
+                cellLayout.logo,
+              logoPath,
+              error,
+            }
+          );
+        }
       }
 
-      ctx.setFillStyle(
-        COLORS.primaryText
-      );
+      ctx.fillStyle =
+        COLORS.primaryText;
 
       setCanvasFont(
         ctx,
@@ -1327,9 +1694,8 @@ function drawEntryCell(
         cellLayout.titleBlockHeight +
         TABLE.titleDescriptionGap;
 
-      ctx.setFillStyle(
-        COLORS.secondaryText
-      );
+      ctx.fillStyle =
+        COLORS.secondaryText;
 
       setCanvasFont(
         ctx,
@@ -1337,10 +1703,6 @@ function drawEntryCell(
         400
       );
 
-      /**
-       * 描述使用完整 contentWidth，
-       * 左右间距严格相等。
-       */
       withClipRect(
         ctx,
         contentLeft,
@@ -1398,8 +1760,7 @@ function drawRows(
         }
       );
 
-      top +=
-        rowLayout.height;
+      top += rowLayout.height;
     }
   );
 }
@@ -1408,11 +1769,10 @@ function drawGrid(
   ctx,
   layout
 ) {
-  ctx.setStrokeStyle(
-    COLORS.border
-  );
+  ctx.strokeStyle =
+    COLORS.border;
 
-  ctx.setLineWidth(1);
+  ctx.lineWidth = 1;
 
   ctx.strokeRect(
     0,
@@ -1442,7 +1802,6 @@ function drawGrid(
           TABLE.cellWidth;
 
       ctx.moveTo(x, 0);
-
       ctx.lineTo(
         x,
         layout.height
@@ -1459,7 +1818,6 @@ function drawGrid(
     layout.header.height;
 
   ctx.moveTo(0, y);
-
   ctx.lineTo(
     layout.width,
     y
@@ -1467,11 +1825,9 @@ function drawGrid(
 
   layout.rows.forEach(
     (rowLayout) => {
-      y +=
-        rowLayout.height;
+      y += rowLayout.height;
 
       ctx.moveTo(0, y);
-
       ctx.lineTo(
         layout.width,
         y
@@ -1514,7 +1870,7 @@ function getExportScale(
   height
 ) {
   const systemInfo =
-    uni.getSystemInfoSync();
+    getWindowMetrics();
 
   const preferredScale =
     Math.max(
@@ -1555,16 +1911,14 @@ function getExportScale(
   );
 }
 
-function flushCanvas(ctx) {
+function flushCanvas() {
   return new Promise((resolve) => {
-    ctx.draw(
-      false,
-      resolve
-    );
+    setTimeout(resolve, 30);
   });
 }
 
 function canvasToFile(
+  canvas,
   width,
   height
 ) {
@@ -1572,8 +1926,7 @@ function canvasToFile(
     (resolve, reject) => {
       uni.canvasToTempFilePath(
         {
-          canvasId:
-            'previewEntryCanvas',
+          canvas,
 
           x: 0,
           y: 0,
@@ -1638,6 +1991,18 @@ async function download() {
     const layout =
       tableLayout.value;
 
+    const { canvas, ctx } =
+      await getCanvasNode();
+
+    /*
+     * 必须先下载所有线上图片，
+     * 并转换为 Canvas 2D Image 对象。
+     */
+    const imagePaths =
+      await loadExportImages(
+        canvas
+      );
+
     const scale =
       getExportScale(
         layout.width,
@@ -1662,38 +2027,44 @@ async function download() {
         )
       );
 
-    canvasWidth.value =
-      outputWidth;
-
-    canvasHeight.value =
-      outputHeight;
+    resizeCanvas(
+      canvas,
+      outputWidth,
+      outputHeight
+    );
 
     await nextTick();
 
-    const imagePaths =
-      await loadExportImages();
+    /*
+     * 修改 canvas.width/height 后上下文状态会重置，
+     * 因此重新取得上下文并设置缩放。
+     */
+    canvasContext =
+      canvas.getContext('2d');
 
-    const ctx =
-      uni.createCanvasContext(
-        'previewEntryCanvas',
-        proxy
-      );
+    const exportContext =
+      canvasContext;
 
-    ctx.scale(
+    exportContext.setTransform(
       scale,
-      scale
+      0,
+      0,
+      scale,
+      0,
+      0
     );
 
     drawExportTable(
-      ctx,
+      exportContext,
       layout,
       imagePaths
     );
 
-    await flushCanvas(ctx);
+    await flushCanvas();
 
     const filePath =
       await canvasToFile(
+        canvas,
         outputWidth,
         outputHeight
       );
@@ -1714,7 +2085,7 @@ async function download() {
 
     uni.showToast({
       title:
-        '下载图片失败，请检查相册权限',
+        '下载图片失败，请检查网络、域名及相册权限',
       icon: 'none',
     });
   } finally {
@@ -1731,6 +2102,7 @@ watch(
   ],
   async ([visible]) => {
     if (visible) {
+      updatePreviewViewport();
       await rebuildLayout();
     }
   },
@@ -1743,6 +2115,7 @@ watch(
 let keydownHandler;
 
 onMounted(async () => {
+  updatePreviewViewport();
   await rebuildLayout();
 
   // #ifdef H5
@@ -1763,6 +2136,10 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  exportImageCache.clear();
+  canvasNode = null;
+  canvasContext = null;
+
   // #ifdef H5
   if (keydownHandler) {
     window.removeEventListener(
@@ -1834,11 +2211,37 @@ onBeforeUnmount(() => {
   transform: scale(0.96);
 }
 
-.preview-table-scroll {
-  flex: 1 1 auto;
+.preview-unsaved-warning {
+  flex: 0 0 auto;
+  margin: 14rpx 18rpx 0;
+  padding: 12rpx 16rpx;
+  border: 1rpx solid rgba(251, 191, 36, .36);
+  border-radius: 16rpx;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(255, 247, 214, .54)),
+    rgba(255, 245, 204, .58);
+  color: #9a5a05;
+  font-size: 23rpx;
+  font-weight: 800;
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+
+.preview-vertical-scroll {
+  display: block;
+  flex: 0 0 auto;
+  min-width: 0;
   min-height: 0;
   background: #edf3fb;
   box-sizing: border-box;
+}
+
+.preview-horizontal-scroll {
+  display: block;
+  min-width: 0;
+  background: #edf3fb;
+  box-sizing: border-box;
+  white-space: nowrap;
 }
 
 .preview-loading {
@@ -1851,8 +2254,9 @@ onBeforeUnmount(() => {
 }
 
 .preview-table {
-  display: inline-flex;
-  flex-direction: column;
+  display: block;
+  flex: none;
+  white-space: normal;
   box-sizing: border-box;
 }
 
@@ -1987,10 +2391,6 @@ onBeforeUnmount(() => {
   max-width: 100%;
   overflow: visible;
 
-  /*
-   * 文字已经由 Canvas 统一拆行。
-   * 禁止预览层进行第二次换行。
-   */
   white-space: nowrap;
   word-break: normal;
   overflow-wrap: normal;
@@ -2062,7 +2462,7 @@ onBeforeUnmount(() => {
   color: #1769e0;
 }
 
-.preview-tool[disabled] {
+.preview-tool.disabled {
   opacity: 0.42;
 }
 

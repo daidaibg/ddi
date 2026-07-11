@@ -28,6 +28,20 @@ export const createEmptyEquipmentEntryRow = () => ({
 
 export const createDefaultEquipmentEntryRows = () => Array.from({ length: DEFAULT_ROW_COUNT }, createEmptyEquipmentEntryRow);
 
+export const createEmptyEquipmentEntryRowsByPart = () => {
+  return equipmentParts.reduce((rowsByPart, part) => {
+    rowsByPart[part.key] = [];
+    return rowsByPart;
+  }, {});
+};
+
+export const createDefaultEquipmentEntryRowsByPart = () => {
+  return equipmentParts.reduce((rowsByPart, part) => {
+    rowsByPart[part.key] = Array.from({ length: DEFAULT_ROW_COUNT }, () => ({ [part.key]: '' }));
+    return rowsByPart;
+  }, {});
+};
+
 export const cloneIgnoredEntryIds = (ignoredEntryIdsByPart) => {
   return equipmentParts.reduce((ignoredMap, part) => {
     ignoredMap[part.key] = [...(ignoredEntryIdsByPart[part.key] || [])];
@@ -48,6 +62,42 @@ export const normalizeEquipmentEntryRows = (rows = []) => {
   return [...safeRows, ...createDefaultEquipmentEntryRows()]
     .slice(0, Math.max(safeRows.length, DEFAULT_ROW_COUNT))
     .map(sanitizeEquipmentEntryRow);
+};
+
+const sanitizePartEntryRow = (part, row = {}) => {
+  const value = row[part.key] || '';
+  return {
+    [part.key]: value && equipmentEntryMap[value] ? value : '',
+  };
+};
+
+export const normalizeEquipmentEntryRowsByPart = (data = {}) => {
+  if (Array.isArray(data)) {
+    const rows = normalizeEquipmentEntryRows(data);
+    return equipmentParts.reduce((rowsByPart, part) => {
+      rowsByPart[part.key] = rows.map((row) => sanitizePartEntryRow(part, row));
+      return rowsByPart;
+    }, createEmptyEquipmentEntryRowsByPart());
+  }
+
+  const source = data && data.rowsByPart ? data.rowsByPart : (data || {});
+  return equipmentParts.reduce((rowsByPart, part) => {
+    const partRows = Array.isArray(source[part.key]) ? source[part.key] : createDefaultEquipmentEntryRowsByPart()[part.key];
+    const safeRows = partRows.length ? partRows : [{ [part.key]: '' }];
+    rowsByPart[part.key] = safeRows.map((row) => sanitizePartEntryRow(part, row));
+    return rowsByPart;
+  }, createEmptyEquipmentEntryRowsByPart());
+};
+
+export const flattenEquipmentEntryRowsByPart = (rowsByPart = {}) => {
+  const maxRows = Math.max(1, ...equipmentParts.map((part) => (rowsByPart[part.key] || []).length));
+  return Array.from({ length: maxRows }, (_, rowIndex) => {
+    return equipmentParts.reduce((row, part) => {
+      const partRow = (rowsByPart[part.key] || [])[rowIndex] || {};
+      row[part.key] = partRow[part.key] || '';
+      return row;
+    }, createEmptyEquipmentEntryRow());
+  });
 };
 
 export const sanitizeIgnoredEntryIds = (settings = {}) => {
@@ -105,14 +155,14 @@ export const saveEquipmentEntrySettings = (settings) => {
 
 export const loadEquipmentEntryRows = () => {
   const cache = readStorage(ENTRY_IDS_STORAGE_KEY);
-  if (!cache) return createDefaultEquipmentEntryRows();
+  if (!cache) return createDefaultEquipmentEntryRowsByPart();
 
   try {
     const parsedRows = typeof cache === 'string' ? JSON.parse(cache) : cache;
-    return Array.isArray(parsedRows) ? normalizeEquipmentEntryRows(parsedRows) : createDefaultEquipmentEntryRows();
+    return normalizeEquipmentEntryRowsByPart(parsedRows);
   } catch (err) {
     console.warn('读取向僵尸开炮装备词条缓存失败', err);
-    return createDefaultEquipmentEntryRows();
+    return createDefaultEquipmentEntryRowsByPart();
   }
 };
 
@@ -125,10 +175,14 @@ export const clearEquipmentEntryLocalConfig = () => {
   uni.removeStorageSync(SETTINGS_STORAGE_KEY);
 };
 
-export const createEquipmentEntryExportData = (rows, settings) => ({
-  rows: rows.map((row) => ({ ...row })),
-  settings: sanitizeEquipmentEntrySettings(settings),
-});
+export const createEquipmentEntryExportData = (rowsByPart, settings) => {
+  const normalizedRowsByPart = normalizeEquipmentEntryRowsByPart(rowsByPart);
+  return {
+    rows: flattenEquipmentEntryRowsByPart(normalizedRowsByPart),
+    rowsByPart: normalizedRowsByPart,
+    settings: sanitizeEquipmentEntrySettings(settings),
+  };
+};
 
 export const defaultSettings = {
   ignoredEntryIdsByPart: {

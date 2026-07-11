@@ -126,6 +126,35 @@ page.data-v-2a73b35f {
   background: rgba(255, 255, 255, 0.91);
   box-shadow: 0 20rpx 50rpx rgba(177, 87, 121, 0.16);
 }
+.duty-calendar.is-placeholder.data-v-2a73b35f {
+  min-height: 910rpx;
+}
+.calendar-placeholder.data-v-2a73b35f {
+  padding-top: 8rpx;
+}
+.placeholder-title.data-v-2a73b35f, .placeholder-week.data-v-2a73b35f, .placeholder-grid text.data-v-2a73b35f {
+  display: block;
+  border-radius: 16rpx;
+  background: #f9edf1;
+}
+.placeholder-title.data-v-2a73b35f {
+  width: 38%;
+  height: 42rpx;
+  margin: 20rpx auto 54rpx;
+}
+.placeholder-week.data-v-2a73b35f {
+  height: 44rpx;
+  margin: 0 8rpx 30rpx;
+}
+.placeholder-grid.data-v-2a73b35f {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 24rpx 18rpx;
+  padding: 0 12rpx;
+}
+.placeholder-grid text.data-v-2a73b35f {
+  height: 72rpx;
+}
 .calendar-header.data-v-2a73b35f {
   display: flex;
   align-items: center;
@@ -257,6 +286,10 @@ page.data-v-2a73b35f {
 }
 .tag-vacation.data-v-2a73b35f {
   background: #60af8c;
+}
+.tag-vacation.has-duty.data-v-2a73b35f {
+  right: auto;
+  left: 1rpx;
 }
 .tag-workday.data-v-2a73b35f {
   background: #7b89a4;

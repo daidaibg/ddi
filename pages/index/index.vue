@@ -68,7 +68,7 @@
 			desc: '开炮！开炮！开炮！',
 			items: [
 				{
-					image: '/static/img/kaipao/equipment/toukui.png',
+					image: 'https://www.gaobug.com/img/static/kaipao/equipment/yifu.png',
 					name: '装备词条',
 					desc: '开炮配置',
 					url: '/pages/indexApp/kaipao-equipment-entries/kaipao-equipment-entries',

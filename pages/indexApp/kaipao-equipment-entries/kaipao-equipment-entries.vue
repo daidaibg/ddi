@@ -1,64 +1,83 @@
 ﻿<template>
   <view class="equipment-page">
-    <view class="page-title">向僵尸开炮装备词条表</view>
-    <view class="page-subtitle">本地配置优先，其次读取云端配置，最后使用默认配置。</view>
+	<view class="save-warning">
+	  <text class="save-warning-icon">⚠️</text>
+	  <text>本地配置优先，其次读取云端配置，最后使用默认配置。</text>
+	</view>
+    <view class="save-warning">
+      <text class="save-warning-icon">⚠️</text>
+      <text>每次编辑完成后，请记得手动点击“保存”。</text>
+    </view>
 
     <view v-if="openidLoading || openidError" class="openid-status" :class="{ error: openidError }">
       <text>{{ openidLoading ? 'openid 获取中...' : openidError }}</text>
       <button v-if="openidError && !openidLoading" class="openid-retry" @tap="retryGetOpenid">重新获取 openid</button>
     </view>
 
-    <view class="toolbar-grid">
-      <view class="toolbar-item detail-item">
-        <u-icon name="eye" color="currentColor" size="30rpx"></u-icon>
-        <text>详情</text>
-        <u-switch v-model="state.showFullName" size="36" active-color="#1769e0"></u-switch>
+    <view class="sticky-action-panel">
+      <view class="toolbar-grid">
+        <view class="toolbar-row primary-actions">
+          <view class="toolbar-item detail-item">
+            <text>详情</text>
+            <switch
+              class="detail-switch"
+              :checked="state.showFullName"
+              color="#1769e0"
+              @change="handleShowFullNameChange"
+            />
+          </view>
+          <button class="toolbar-btn cloud" :disabled="state.syncing || openidLoading" @tap="useCloudConfig">
+            <u-icon name="server-fill" color="currentColor" size="30rpx"></u-icon>
+            <text>云端配置</text>
+          </button>
+          <button class="toolbar-btn export" @tap="previewImage">
+            <u-icon name="photo" color="currentColor" size="30rpx"></u-icon>
+            <text>预览图片</text>
+          </button>
+        </view>
+
+        <view class="toolbar-row secondary-actions">
+          <button class="toolbar-btn reset" :disabled="state.clearing" @tap="resetRows">
+            <u-icon name="trash" color="currentColor" size="30rpx"></u-icon>
+            <text>清空</text>
+          </button>
+          <button class="toolbar-btn ignore-manage" @tap="openIgnoredManager">
+            <u-icon name="eye-off" color="currentColor" size="30rpx"></u-icon>
+            <text>已忽略</text>
+          </button>
+          <button v-if="!state.isEditing" class="toolbar-btn edit" :disabled="state.syncing || openidLoading" @tap="startEditMode">
+            <u-icon name="edit-pen" color="currentColor" size="30rpx"></u-icon>
+            <text>编辑</text>
+          </button>
+          <button v-if="state.isEditing" class="toolbar-btn cancel" @tap="cancelEditMode">
+            <u-icon name="close" color="currentColor" size="30rpx"></u-icon>
+            <text>取消</text>
+          </button>
+          <button class="toolbar-btn save" :class="{ active: state.hasUnsavedChanges }" :disabled="state.syncing || openidLoading" @tap="handleSave">
+            <u-icon name="checkmark" color="currentColor" size="30rpx"></u-icon>
+            <text>保存</text>
+          </button>
+        </view>
       </view>
-      <button class="toolbar-btn reset" @tap="resetRows">
-        <u-icon name="trash" color="currentColor" size="30rpx"></u-icon>
-        <text>清空</text>
-      </button>
-      <button class="toolbar-btn settings" @tap="openSettings">
-        <u-icon name="setting" color="currentColor" size="30rpx"></u-icon>
-        <text>设置</text>
-      </button>
-      <button class="toolbar-btn cloud" :disabled="state.syncing || openidLoading" @tap="useCloudConfig">
-        <u-icon name="server-fill" color="currentColor" size="30rpx"></u-icon>
-        <text>云端配置</text>
-      </button>
-      <button class="toolbar-btn export" @tap="previewImage">
-        <u-icon name="photo" color="currentColor" size="30rpx"></u-icon>
-        <text>预览图片</text>
-      </button>
-      <view class="edit-actions">
-        <button v-if="state.isEditing" class="toolbar-btn cancel" :disabled="state.syncing" @tap="cancelEdit">
-          <u-icon name="close" color="currentColor" size="28rpx"></u-icon>
-          <text>取消</text>
-        </button>
-        <button class="toolbar-btn save" :disabled="state.syncing || openidLoading" @tap="handleEditSave">
-          <u-icon :name="state.isEditing ? 'checkmark' : 'edit-pen'" color="currentColor" size="30rpx"></u-icon>
-          <text>{{ state.isEditing ? '保存' : '编辑' }}</text>
-        </button>
-      </view>
+
+      <scroll-view class="part-tabs" scroll-x :show-scrollbar="false">
+        <view class="part-tabs-inner">
+          <button
+            v-for="part in equipmentParts"
+            :key="part.key"
+            class="part-tab"
+            :class="{ active: activePartKey === part.key }"
+            @tap="activePartKey = part.key"
+          >
+            <image :src="partIconMap[part.key]" mode="aspectFit"></image>
+            <text>{{ part.label }}</text>
+          </button>
+        </view>
+      </scroll-view>
     </view>
 
-    <scroll-view class="part-tabs" scroll-x :show-scrollbar="false">
-      <view class="part-tabs-inner">
-        <button
-          v-for="part in equipmentParts"
-          :key="part.key"
-          class="part-tab"
-          :class="{ active: activePartKey === part.key }"
-          @tap="activePartKey = part.key"
-        >
-          <image :src="partIconMap[part.key]" mode="aspectFit"></image>
-          <text>{{ part.label }}</text>
-        </button>
-      </view>
-    </scroll-view>
-
     <view class="entry-list">
-      <view v-for="(row, rowIndex) in tableRows" :key="rowIndex" class="entry-card">
+      <view v-for="(row, rowIndex) in activePartRows" :key="rowIndex" class="entry-card">
         <view class="entry-main">
           <text class="entry-index">#{{ rowIndex + 1 }}</text>
           <view
@@ -89,7 +108,7 @@
           </view>
           <view v-if="state.isEditing" class="entry-actions">
             <button v-if="getEntry(row[activePart.key])" :disabled="rowIndex === 0" @tap.stop="moveEntry(rowIndex, activePart, -1)">↑</button>
-            <button v-if="getEntry(row[activePart.key])" :disabled="rowIndex === tableRows.length - 1" @tap.stop="moveEntry(rowIndex, activePart, 1)">↓</button>
+            <button v-if="getEntry(row[activePart.key])" :disabled="rowIndex === activePartRows.length - 1" @tap.stop="moveEntry(rowIndex, activePart, 1)">↓</button>
             <button class="danger" @tap.stop="removeRow(rowIndex)">删</button>
           </view>
         </view>
@@ -132,23 +151,29 @@
       </view>
     </u-popup>
 
-    <u-popup v-model="settingsVisible" mode="bottom" border-radius="18" :safe-area-inset-bottom="true" :mask-close-able="true">
-      <view class="popup-panel settings-panel">
+    <u-popup v-model="ignoredManagerVisible" mode="bottom" border-radius="18" :safe-area-inset-bottom="true" :mask-close-able="true">
+      <view class="popup-panel ignored-manager-panel">
         <view class="popup-head">
-          <text>忽略词条设置</text>
-          <button class="link-btn" @tap="settingsVisible = false">完成</button>
+          <text>已忽略词条</text>
+          <button class="link-btn" @tap="ignoredManagerVisible = false">完成</button>
         </view>
-        <view class="settings-summary">当前部位：{{ activePart.label }}，已忽略 {{ ignoredEntryIdsByPart[activePart.key].length }} 条</view>
-        <scroll-view class="option-scroll settings-scroll" scroll-y>
-          <view
-            v-for="entryId in ignoredEntryIdsByPart[activePart.key]"
-            :key="entryId"
-            class="ignored-option"
-          >
-            <text>{{ getEntryDisplayName(getEntry(entryId)) || entryId }}</text>
-            <button @tap="restoreIgnoredEntry(activePart, entryId)">恢复</button>
+        <view class="ignored-manager-summary">
+          <text>已忽略 {{ ignoredEntryTotal }} 条词条</text>
+          <button v-if="ignoredEntryTotal" class="link-btn danger-link" @tap="restoreAllIgnoredEntries">全部恢复</button>
+        </view>
+        <scroll-view class="option-scroll ignored-manager-scroll" scroll-y>
+          <view v-for="group in ignoredEntryGroups" :key="group.key" class="ignored-group">
+            <view class="ignored-group-title">{{ group.label }}</view>
+            <view
+              v-for="entryId in group.ids"
+              :key="entryId"
+              class="ignored-option"
+            >
+              <text>{{ getEntryDisplayName(getEntry(entryId)) || entryId }}</text>
+              <button @tap="restoreIgnoredEntry(group.key, entryId)">恢复</button>
+            </view>
           </view>
-          <view v-if="!ignoredEntryIdsByPart[activePart.key].length" class="empty-tip">当前部位没有忽略词条</view>
+          <view v-if="!ignoredEntryTotal" class="empty-tip">暂无已忽略词条</view>
         </scroll-view>
       </view>
     </u-popup>
@@ -158,27 +183,27 @@
       :parts="previewParts"
       :rows="previewRows"
       :show-full-name="state.showFullName"
+      :unsaved-warning="state.isEditing || state.hasUnsavedChanges"
     ></equipment-image-preview>
   </view>
 </template>
 
 <script setup>
 import { computed, getCurrentInstance, nextTick, reactive, ref, watch } from 'vue';
-import { onLoad ,onShareAppMessage} from '@dcloudio/uni-app';
+import { onBackPress, onLoad ,onShareAppMessage} from '@dcloudio/uni-app';
 import EquipmentImagePreview from './equipment-image-preview.vue';
 import { equipmentEntryListByPart, equipmentEntryMap, equipmentParts } from './equipment-entry-data.js';
 import {
   clearEquipmentEntryLocalConfig,
   cloneIgnoredEntryIds,
-  createDefaultEquipmentEntryRows,
-  createEmptyEquipmentEntryRow,
+  createDefaultEquipmentEntryRowsByPart,
   createEmptyIgnoredEntryIds,
   createEquipmentEntryExportData,
   defaultSettings,
   hasEquipmentEntryLocalConfig,
   loadEquipmentEntryRows,
   loadEquipmentEntrySettings,
-  normalizeEquipmentEntryRows,
+  normalizeEquipmentEntryRowsByPart,
   sanitizeIgnoredEntryIds,
   saveEquipmentEntryRows,
   saveEquipmentEntrySettings,
@@ -193,75 +218,109 @@ onShareAppMessage(() => ({
 }))
 
 const seasonLogoMap = {
-  G1: '/static/img/kaipao/G/logo/G1.png',
-  G2: '/static/img/kaipao/G/logo/G2.png',
-  G3: '/static/img/kaipao/G/logo/G3.png',
+ G1: 'https://www.gaobug.com/img/static/kaipao/G/G1.png',
+  G2: 'https://www.gaobug.com/img/static/kaipao/G/G2.png',
+  G3: 'https://www.gaobug.com/img/static/kaipao/G/G3.png',
 };
 
 const partIconMap = {
-  helmet: '/static/img/kaipao/equipment/toukui.png',
-  clothes: '/static/img/kaipao/equipment/yifu.png',
-  boots: '/static/img/kaipao/equipment/xiezi.png',
-  bracer: '/static/img/kaipao/equipment/hubi.png',
-  pants: '/static/img/kaipao/equipment/kuzi.png',
-  gloves: '/static/img/kaipao/equipment/shoutao.png',
+  helmet: 'https://www.gaobug.com/img/static/kaipao/equipment/toukui.png',
+  clothes: 'https://www.gaobug.com/img/static/kaipao/equipment/yifu.png',
+  boots: 'https://www.gaobug.com/img/static/kaipao/equipment/xiezi.png',
+  bracer: 'https://www.gaobug.com/img/static/kaipao/equipment/hubi.png',
+  pants: 'https://www.gaobug.com/img/static/kaipao/equipment/kuzi.png',
+  gloves: 'https://www.gaobug.com/img/static/kaipao/equipment/shoutao.png',
 };
 
 const toast = (title, icon = 'none') => uni.showToast({ title, icon });
 
 const { proxy } = getCurrentInstance();
-const tableRows = reactive(createDefaultEquipmentEntryRows());
+const rowsByPart = reactive(createDefaultEquipmentEntryRowsByPart());
 const ignoredEntryIdsByPart = reactive(createEmptyIgnoredEntryIds());
 const activePartKey = ref(equipmentParts[0].key);
 const activeRowIndex = ref(-1);
 const entryPopupVisible = ref(false);
-const settingsVisible = ref(false);
-const editSnapshot = ref(null);
+const ignoredManagerVisible = ref(false);
 const previewVisible = ref(false);
 const openid = ref('');
 const openidLoading = ref(false);
 const openidError = ref('');
+const allowBackWithoutPrompt = ref(false);
 const state = reactive({
   isEditing: false,
   showFullName: true,
   syncing: false,
+  clearing: false,
   suppressLocalSave: false,
   hasLocalConfig: false,
+  hasUnsavedChanges: false,
 });
 
 const activePart = computed(() => equipmentParts.find((part) => part.key === activePartKey.value) || equipmentParts[0]);
-const activeRow = computed(() => tableRows[activeRowIndex.value] || null);
+const activePartRows = computed(() => rowsByPart[activePartKey.value] || []);
+const activeRow = computed(() => activePartRows.value[activeRowIndex.value] || null);
 const selectedByPart = computed(() => equipmentParts.reduce((selectedMap, part) => {
-  selectedMap[part.key] = tableRows.map((row) => row[part.key]).filter(Boolean);
+  selectedMap[part.key] = (rowsByPart[part.key] || []).map((row) => row[part.key]).filter(Boolean);
   return selectedMap;
 }, {}));
 const activeOptions = computed(() => (activeRow.value ? getOptions(activePart.value, activeRow.value) : []));
+const ignoredEntryTotal = computed(() => equipmentParts.reduce((total, part) => {
+  return total + (ignoredEntryIdsByPart[part.key] || []).length;
+}, 0));
+const ignoredEntryGroups = computed(() => equipmentParts
+  .map((part) => ({
+    key: part.key,
+    label: part.label,
+    ids: ignoredEntryIdsByPart[part.key] || [],
+  }))
+  .filter((group) => group.ids.length));
 const previewParts = computed(() => equipmentParts.map((part) => ({
   key: part.key,
   label: part.label,
 })));
-const previewRows = computed(() => tableRows.map((row, rowIndex) => ({
-  index: rowIndex + 1,
-  cells: equipmentParts.map((part) => {
-    const entry = getEntry(row[part.key]);
-    return {
-      key: part.key,
-      displayName: getEntryDisplayName(entry),
-      name: (entry && entry.name) || '',
-      season: (entry && entry.season) || '',
-    };
-  }),
-})));
+const previewRows = computed(() => {
+  const maxRows = Math.max(1, ...equipmentParts.map((part) => (rowsByPart[part.key] || []).length));
+  return Array.from({ length: maxRows }, (_, rowIndex) => ({
+    index: rowIndex + 1,
+    cells: equipmentParts.map((part) => {
+      const row = (rowsByPart[part.key] || [])[rowIndex] || {};
+      const entry = getEntry(row[part.key]);
+      return {
+        key: part.key,
+        displayName: getEntryDisplayName(entry),
+        name: (entry && entry.name) || '',
+        season: (entry && entry.season) || '',
+      };
+    }),
+  }));
+});
 
-watch(tableRows, () => {
-  if (!state.suppressLocalSave) saveToLocal();
+watch(rowsByPart, () => {
+  markUnsaved();
 }, { deep: true });
 watch(ignoredEntryIdsByPart, () => {
-  if (!state.suppressLocalSave) saveSettingsToLocal();
+  markUnsaved();
 }, { deep: true });
 watch(() => state.showFullName, () => {
-  if (!state.suppressLocalSave) saveSettingsToLocal();
+  markUnsaved();
 });
+watch(activePartKey, () => {
+  activeRowIndex.value = -1;
+  entryPopupVisible.value = false;
+});
+
+function handleShowFullNameChange(event) {
+  state.showFullName = !!event.detail.value;
+}
+
+function markUnsaved() {
+  if (state.suppressLocalSave) return;
+  state.hasUnsavedChanges = true;
+}
+
+function markSaved() {
+  state.hasUnsavedChanges = false;
+}
 
 function getEntry(id) {
   return id ? equipmentEntryMap[id] : undefined;
@@ -284,8 +343,11 @@ function getOptions(part, row) {
   });
 }
 
-function replaceRows(rows) {
-  tableRows.splice(0, tableRows.length, ...rows);
+function replaceRowsByPart(nextRowsByPart) {
+  const normalizedRowsByPart = normalizeEquipmentEntryRowsByPart(nextRowsByPart);
+  equipmentParts.forEach((part) => {
+    rowsByPart[part.key].splice(0, rowsByPart[part.key].length, ...normalizedRowsByPart[part.key]);
+  });
 }
 
 function applyIgnoredEntryIds(settings) {
@@ -296,12 +358,12 @@ function applyIgnoredEntryIds(settings) {
 }
 
 function saveToLocal() {
-  saveEquipmentEntryRows(tableRows);
+  saveEquipmentEntryRows(createExportData().rowsByPart);
   state.hasLocalConfig = true;
 }
 
 function createExportData() {
-  return createEquipmentEntryExportData(tableRows, {
+  return createEquipmentEntryExportData(rowsByPart, {
     ignoredEntryIdsByPart: cloneIgnoredEntryIds(ignoredEntryIdsByPart),
     showFullName: state.showFullName,
   });
@@ -313,7 +375,7 @@ function saveSettingsToLocal() {
 }
 
 function loadLocalRows() {
-  replaceRows(loadEquipmentEntryRows());
+  replaceRowsByPart(loadEquipmentEntryRows());
 }
 
 function loadLocalSettings() {
@@ -323,15 +385,13 @@ function loadLocalSettings() {
 }
 
 function applyDefaultConfig() {
-  replaceRows(createDefaultEquipmentEntryRows());
+  replaceRowsByPart(createDefaultEquipmentEntryRowsByPart());
   applyIgnoredEntryIds(defaultSettings);
   state.showFullName = defaultSettings.showFullName;
 }
 
 function applyExportData(data = {}, persistLocal = true) {
-  if (Array.isArray(data.rows)) {
-    replaceRows(normalizeEquipmentEntryRows(data.rows));
-  }
+  replaceRowsByPart(data.rowsByPart || data.rows || createDefaultEquipmentEntryRowsByPart());
   applyIgnoredEntryIds(data.settings || {});
   if (typeof (data.settings || {}).showFullName === 'boolean') {
     state.showFullName = data.settings.showFullName;
@@ -396,7 +456,7 @@ function ensureOpenid(force = false) {
         }
         proxy.$http({
           baseUrl: baseVar.baseUrl,
-          url: '/auth/cs/user/wechat/mini-program/openid',
+          url: '/blog/auth/cs/user/wechat/mini-program/openid',
           method: 'post',
           data: { code: loginRes.code },
         }).then((res) => {
@@ -470,6 +530,7 @@ async function useCloudConfig() {
     if (hasCloudConfig === null) return;
     if (!hasCloudConfig) applyDefaultConfig();
     clearEquipmentEntryLocalConfig();
+    markSaved();
     toast(hasCloudConfig ? '已切换为云端配置' : '本地配置已清空，暂无云端配置');
   } finally {
     state.suppressLocalSave = false;
@@ -488,6 +549,9 @@ async function saveToBackend() {
       data: { ...createExportData(), openid: openid.value },
     });
     if (res && res.code === 200) {
+      saveToLocal();
+      saveSettingsToLocal();
+      markSaved();
       toast('保存成功');
       return true;
     }
@@ -502,49 +566,16 @@ async function saveToBackend() {
   }
 }
 
-async function handleEditSave() {
-  if (!state.isEditing) {
-    editSnapshot.value = createExportData();
-    state.isEditing = true;
-    return;
-  }
+function startEditMode() {
+  state.isEditing = true;
+}
+
+async function handleSave() {
   const isSaved = await saveToBackend();
   if (isSaved) {
     state.isEditing = false;
     entryPopupVisible.value = false;
-    editSnapshot.value = null;
   }
-}
-
-function hasUnsavedEditChanges() {
-  return !!editSnapshot.value && JSON.stringify(createExportData()) !== JSON.stringify(editSnapshot.value);
-}
-
-function finishCancelEdit() {
-  if (editSnapshot.value) {
-    state.suppressLocalSave = true;
-    applyExportData(editSnapshot.value, true);
-    nextTick(() => {
-      state.suppressLocalSave = false;
-    });
-  }
-  state.isEditing = false;
-  entryPopupVisible.value = false;
-  editSnapshot.value = null;
-}
-
-function cancelEdit() {
-  if (!hasUnsavedEditChanges()) {
-    finishCancelEdit();
-    return;
-  }
-  uni.showModal({
-    title: '取消编辑',
-    content: '当前修改尚未保存，确定要取消吗？',
-    success: (res) => {
-      if (res.confirm) finishCancelEdit();
-    },
-  });
 }
 
 function openEntryPicker(rowIndex) {
@@ -571,44 +602,73 @@ function ignoreEntry(part, entry) {
   toast(`已忽略：${getEntryDisplayName(entry)}`);
 }
 
-function restoreIgnoredEntry(part, entryId) {
-  ignoredEntryIdsByPart[part.key] = ignoredEntryIdsByPart[part.key].filter((id) => id !== entryId);
+function restoreIgnoredEntry(partKey, entryId) {
+  ignoredEntryIdsByPart[partKey] = ignoredEntryIdsByPart[partKey].filter((id) => id !== entryId);
 }
 
-function openSettings() {
-  settingsVisible.value = true;
+function restoreAllIgnoredEntries() {
+  equipmentParts.forEach((part) => {
+    ignoredEntryIdsByPart[part.key] = [];
+  });
+  toast('已恢复全部忽略词条', 'success');
+}
+
+function openIgnoredManager() {
+  ignoredManagerVisible.value = true;
+}
+
+function cancelEditMode() {
+  state.isEditing = false;
+  entryPopupVisible.value = false;
 }
 
 function addRow() {
-  tableRows.push(createEmptyEquipmentEntryRow());
+  activePartRows.value.push({ [activePart.value.key]: '' });
 }
 
 function removeRow(index) {
-  if (tableRows.length === 1) {
-    tableRows.splice(0, 1, createEmptyEquipmentEntryRow());
+  if (activePartRows.value.length === 1) {
+    activePartRows.value.splice(0, 1, { [activePart.value.key]: '' });
     return;
   }
-  tableRows.splice(index, 1);
+  activePartRows.value.splice(index, 1);
 }
 
 function resetRows() {
+  if (state.clearing) return;
   uni.showModal({
-    title: '清空装备词条',
-    content: '确定恢复默认空白行吗？',
+    title: '确认清空？',
+    content: '清空后，当前装备分类中的所有词条将被删除。该操作无法直接撤销，请确认是否继续。',
+    confirmText: '确认清空',
+    confirmColor: '#dc2626',
+    cancelText: '取消',
     success: (res) => {
-      if (res.confirm) replaceRows(createDefaultEquipmentEntryRows());
+      if (!res.confirm) return;
+      state.clearing = true;
+      const previousRows = activePartRows.value.map((row) => ({ ...row }));
+      try {
+        rowsByPart[activePart.value.key].splice(0, rowsByPart[activePart.value.key].length, { [activePart.value.key]: '' });
+        toast('已清空当前分类', 'success');
+      } catch (error) {
+        rowsByPart[activePart.value.key].splice(0, rowsByPart[activePart.value.key].length, ...previousRows);
+        console.warn('清空装备词条失败', error);
+        toast('清空失败，请稍后再试');
+      } finally {
+        state.clearing = false;
+      }
     },
   });
 }
 
 function moveEntry(rowIndex, part, direction) {
   const nextIndex = rowIndex + direction;
-  if (nextIndex < 0 || nextIndex >= tableRows.length) return;
-  const currentValue = tableRows[rowIndex][part.key];
+  const partRows = rowsByPart[part.key] || [];
+  if (nextIndex < 0 || nextIndex >= partRows.length) return;
+  const currentValue = partRows[rowIndex][part.key];
   if (!currentValue) return;
-  const nextValue = tableRows[nextIndex][part.key];
-  tableRows[rowIndex][part.key] = nextValue;
-  tableRows[nextIndex][part.key] = currentValue;
+  const nextValue = partRows[nextIndex][part.key];
+  partRows[rowIndex][part.key] = nextValue;
+  partRows[nextIndex][part.key] = currentValue;
 }
 
 function previewImage() {
@@ -619,29 +679,74 @@ onLoad(async () => {
   await ensureOpenid();
   await loadInitialConfig();
 });
+
+onBackPress(() => {
+  if (allowBackWithoutPrompt.value) return false;
+  if (!state.hasUnsavedChanges) return false;
+
+  uni.showModal({
+    title: '当前修改尚未保存',
+    content: '当前修改尚未保存，确定要离开吗？',
+    confirmText: '离开',
+    confirmColor: '#dc2626',
+    cancelText: '继续编辑',
+    success: (res) => {
+      if (res.confirm) {
+        allowBackWithoutPrompt.value = true;
+        uni.navigateBack();
+      }
+    },
+  });
+
+  return true;
+});
 </script>
 
 <style lang="scss">
 .equipment-page {
   min-height: 100vh;
-  overflow-x: hidden;
+  width: 100%;
   padding: 22rpx 18rpx 48rpx;
-  background: #f4f7ff;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, .92), transparent 34%),
+    linear-gradient(180deg, #eef5ff 0%, #f8fbff 48%, #f2f7ff 100%);
   color: #111827;
   box-sizing: border-box;
 }
 
-.page-title {
-  font-size: 36rpx;
-  font-weight: 900;
-  line-height: 1.3;
-}
 
 .page-subtitle {
   margin-top: 8rpx;
   color: #64748b;
   font-size: 24rpx;
   line-height: 1.45;
+}
+
+.save-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10rpx;
+  margin-top: 16rpx;
+  padding: 16rpx 18rpx;
+  border: 1rpx solid rgba(251, 191, 36, .34);
+  border-radius: 20rpx;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .72), rgba(255, 247, 214, .54)),
+    rgba(255, 245, 204, .56);
+  box-shadow:
+    inset 0 1rpx 0 rgba(255, 255, 255, .9),
+    0 10rpx 24rpx rgba(180, 83, 9, .08);
+  color: #9a5a05;
+  font-size: 24rpx;
+  font-weight: 800;
+  line-height: 1.45;
+  box-sizing: border-box;
+  backdrop-filter: blur(16rpx);
+  -webkit-backdrop-filter: blur(16rpx);
+}
+
+.save-warning-icon {
+  flex: 0 0 auto;
 }
 
 
@@ -686,11 +791,48 @@ onLoad(async () => {
 .openid-retry::after {
   border: 0;
 }
+
+.sticky-action-panel {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin: 16rpx -18rpx 0;
+  padding: 8rpx 18rpx 4rpx;
+  background:
+    linear-gradient(180deg, rgba(239, 246, 255, .96), rgba(248, 251, 255, .92));
+  box-shadow: 0 12rpx 26rpx rgba(37, 67, 101, .08);
+  box-sizing: border-box;
+}
+
 .toolbar-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8rpx;
-  margin-top: 14rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 18rpx;
+  padding: 12rpx;
+  border: 1rpx solid rgba(255, 255, 255, .78);
+  border-radius: 26rpx;
+  background: rgba(255, 255, 255, .26);
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, .8), 0 16rpx 36rpx rgba(45, 72, 105, .10);
+}
+
+.toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14rpx;
+}
+
+.primary-actions {
+  gap: 16rpx;
+}
+
+.secondary-actions {
+  gap: 12rpx;
+  padding-top: 4rpx;
 }
 
 .toolbar-item,
@@ -698,51 +840,143 @@ onLoad(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5rpx;
-  height: 56rpx;
+  gap: 6rpx;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 152rpx;
+  max-width: 280rpx;
+  height: 62rpx;
+  padding: 0 32rpx;
   border: 1rpx solid rgba(255, 255, 255, .82);
-  border-radius: 12rpx;
-  background: #fff;
-  box-shadow: 0 5rpx 14rpx rgba(39, 76, 119, .08);
-  color: #24394d;
+  border-radius: 999rpx;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .74), rgba(226, 238, 250, .42)),
+    rgba(236, 244, 255, .38);
+  box-shadow:
+    inset 0 1rpx 0 rgba(255, 255, 255, .96),
+    inset 0 -1rpx 0 rgba(92, 122, 158, .10),
+    0 10rpx 22rpx rgba(36, 65, 98, .12);
+  color: #23384f;
   font-size: 24rpx;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1;
   text-align: center;
   box-sizing: border-box;
+  white-space: normal;
+  word-break: keep-all;
+  transition: transform .14s ease, opacity .14s ease, box-shadow .14s ease, background-color .14s ease;
+}
+
+.toolbar-item text,
+.toolbar-btn text {
+  display: block;
+  min-width: 0;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.toolbar-btn .u-icon,
+.toolbar-item .u-icon {
+  flex: 0 0 auto;
 }
 
 .toolbar-btn::after {
   border: 0;
 }
 
+.toolbar-btn:active,
+.toolbar-item:active,
+.part-tab:active,
+.entry-actions button:active,
+.add-row-btn:active,
+.link-btn:active,
+.ignore-btn:active,
+.ignored-option button:active {
+  transform: translateY(2rpx) scale(.985);
+  box-shadow:
+    inset 0 2rpx 6rpx rgba(31, 51, 78, .12),
+    0 4rpx 12rpx rgba(36, 65, 98, .08);
+}
+
+.toolbar-btn[disabled],
+.entry-actions button[disabled],
+.preview-tool[disabled] {
+  opacity: .42;
+}
+
 .detail-item {
   gap: 8rpx;
+  min-width: 172rpx;
+  padding-left: 30rpx;
+  padding-right: 16rpx;
 }
 
-.reset { background: #fff7e8; }
-.settings { background: #eaf6ff; }
-.cloud { background: #f0efff; }
-.export { background: #edfbea; }
-.save { background: #e8f4ff; color: #17416e; }
-.cancel { background: #f8fafc; color: #64748b; }
-
-.edit-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4rpx;
-  min-width: 0;
+.detail-switch {
+  flex: 0 0 auto;
+  transform: scale(.72);
+  transform-origin: center;
 }
 
-.edit-actions .toolbar-btn {
-  width: 100%;
-  min-width: 0;
-  padding: 0;
+.reset,
+.ignore-manage,
+.cloud,
+.export,
+.edit,
+.cancel,
+.save {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(225, 238, 251, .42)),
+    rgba(235, 244, 255, .38);
+}
+
+.reset {
+  color: #b4232a;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(255, 229, 232, .44)),
+    rgba(255, 242, 244, .56);
+}
+
+.save.active {
+  color: #075fb8;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .84), rgba(196, 224, 255, .52)),
+    rgba(220, 239, 255, .54);
+  box-shadow:
+    inset 0 1rpx 0 rgba(255, 255, 255, .96),
+    0 0 0 1rpx rgba(23, 105, 224, .10),
+    0 12rpx 26rpx rgba(23, 105, 224, .16);
+}
+
+@media (min-width: 768px) {
+  .toolbar-grid {
+    gap: 24rpx;
+    padding: 16rpx;
+  }
+
+  .toolbar-row {
+    gap: 24rpx;
+  }
+
+  .toolbar-item,
+  .toolbar-btn {
+    height: 68rpx;
+    min-width: 176rpx;
+    max-width: 340rpx;
+    padding-left: 44rpx;
+    padding-right: 44rpx;
+    font-size: 26rpx;
+  }
+
+  .detail-item {
+    min-width: 196rpx;
+    padding-left: 42rpx;
+    padding-right: 22rpx;
+  }
 }
 
 .part-tabs {
   width: 100%;
-  margin-top: 18rpx;
+  margin-top: 12rpx;
   white-space: nowrap;
 }
 
@@ -757,17 +991,20 @@ onLoad(async () => {
   align-items: center;
   justify-content: center;
   gap: 8rpx;
-  height: 62rpx;
+  height: 60rpx;
   min-width: 120rpx;
   padding: 0 18rpx;
-  border: 1rpx solid #dce5f2;
-  border-radius: 16rpx;
-  background: #fff;
+  border: 1rpx solid rgba(255, 255, 255, .76);
+  border-radius: 999rpx;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .76), rgba(229, 239, 250, .42)),
+    rgba(240, 247, 255, .42);
   color: #536071;
   font-size: 24rpx;
   font-weight: 800;
-  line-height: 62rpx;
-  box-shadow: 0 4rpx 14rpx rgba(15, 23, 42, .06);
+  line-height: 60rpx;
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, .92), 0 6rpx 16rpx rgba(43, 76, 112, .09);
+  transition: transform .14s ease, box-shadow .14s ease, background-color .14s ease;
 }
 
 .part-tab::after { border: 0; }
@@ -779,25 +1016,28 @@ onLoad(async () => {
 }
 
 .part-tab.active {
-  border-color: #1769e0;
-  background: #eaf2ff;
+  border-color: rgba(23, 105, 224, .28);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .84), rgba(197, 224, 255, .52)),
+    rgba(221, 239, 255, .58);
   color: #1769e0;
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, .95), 0 10rpx 22rpx rgba(23, 105, 224, .14);
 }
 
 .entry-list {
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
-  margin-top: 4rpx;
+  gap: 14rpx;
+  margin-top: 6rpx;
 }
 
 .entry-card {
   width: 100%;
   padding: 10rpx 12rpx;
-  border: 1rpx solid #e3eaf5;
-  border-radius: 16rpx;
-  background: #fff;
-  box-shadow: 0 6rpx 18rpx rgba(15, 23, 42, .06);
+  border: 1rpx solid rgba(255, 255, 255, .78);
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, .64);
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, .86), 0 10rpx 26rpx rgba(31, 58, 91, .08);
   box-sizing: border-box;
 }
 
@@ -814,7 +1054,7 @@ onLoad(async () => {
   min-width: 48rpx;
   padding: 2rpx 8rpx;
   border-radius: 999rpx;
-  background: #eaf2ff;
+  background: rgba(225, 239, 255, .76);
   color: #1769e0;
   font-size: 23rpx;
   font-weight: 900;
@@ -832,31 +1072,36 @@ onLoad(async () => {
   display: flex;
   flex: 1 1 auto;
   min-width: 0;
-  min-height: 58rpx;
+  min-height: 62rpx;
   align-items: center;
   padding: 6rpx 28rpx 6rpx 16rpx;
-  border: 1rpx solid #dbe8f7;
-  border-radius: 14rpx;
-  background: #f8fbff;
+  border: 1rpx solid rgba(255, 255, 255, .82);
+  border-radius: 18rpx;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .76), rgba(228, 239, 251, .42)),
+    rgba(241, 247, 255, .48);
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, .9), 0 6rpx 16rpx rgba(37, 70, 103, .07);
   box-sizing: border-box;
-  transition: background-color .15s ease, border-color .15s ease, transform .15s ease;
+  transition: background-color .15s ease, border-color .15s ease, transform .15s ease, box-shadow .15s ease;
 }
 
 .entry-picker.selected {
-  border-color: rgba(23, 105, 224, .34);
-  background: #ffffff;
-  box-shadow: inset 0 0 0 1rpx rgba(23, 105, 224, .05);
+  border-color: rgba(23, 105, 224, .24);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .82), rgba(212, 233, 255, .48)),
+    rgba(235, 246, 255, .62);
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, .94), 0 8rpx 18rpx rgba(23, 105, 224, .10);
 }
 
 .entry-picker.empty {
-  border-style: dashed;
-  background: #f3f7fc;
+  border-style: solid;
+  background: rgba(241, 247, 253, .44);
 }
 
 .entry-picker-hover {
-  border-color: #1769e0;
-  background: #eaf2ff;
-  transform: scale(.99);
+  border-color: rgba(23, 105, 224, .28);
+  background: rgba(224, 239, 255, .62);
+  transform: translateY(2rpx) scale(.992);
 }
 
 .picker-chevron {
@@ -914,18 +1159,24 @@ onLoad(async () => {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 4rpx;
+  gap: 6rpx;
 }
 
 .entry-actions button {
-  width: 46rpx;
-  height: 46rpx;
+  width: 50rpx;
+  height: 50rpx;
   padding: 0;
-  border-radius: 12rpx;
-  background: #f8fafc;
-  color: #475569;
+  border: 1rpx solid rgba(255, 255, 255, .78);
+  border-radius: 16rpx;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(229, 239, 250, .42)),
+    rgba(240, 247, 255, .46);
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, .9), 0 6rpx 14rpx rgba(36, 65, 98, .10);
+  color: #40566f;
   font-size: 23rpx;
-  line-height: 46rpx;
+  font-weight: 900;
+  line-height: 50rpx;
+  transition: transform .14s ease, opacity .14s ease, box-shadow .14s ease;
 }
 
 .entry-actions button[disabled] {
@@ -933,7 +1184,10 @@ onLoad(async () => {
 }
 
 .entry-actions .danger {
-  color: #ff4d4f;
+  color: #e34a52;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(255, 229, 232, .42)),
+    rgba(255, 241, 243, .52);
 }
 
 .entry-desc {
@@ -950,12 +1204,17 @@ onLoad(async () => {
   width: 100%;
   height: 68rpx;
   margin-top: 16rpx;
-  border-radius: 16rpx;
-  background: #fff;
+  border: 1rpx solid rgba(255, 255, 255, .82);
+  border-radius: 999rpx;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .82), rgba(222, 238, 255, .48)),
+    rgba(236, 246, 255, .58);
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, .94), 0 10rpx 24rpx rgba(23, 105, 224, .10);
   color: #1769e0;
   font-size: 27rpx;
   font-weight: 800;
   line-height: 68rpx;
+  transition: transform .14s ease, box-shadow .14s ease;
 }
 
 .popup-panel {
@@ -979,13 +1238,18 @@ onLoad(async () => {
 
 .link-btn {
   flex: 0 0 auto;
-  height: 48rpx;
-  padding: 0 14rpx;
-  border-radius: 12rpx;
-  background: #eef6ff;
+  height: 50rpx;
+  padding: 0 18rpx;
+  border: 1rpx solid rgba(255, 255, 255, .78);
+  border-radius: 999rpx;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(222, 238, 255, .44)),
+    rgba(236, 246, 255, .58);
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, .92), 0 6rpx 14rpx rgba(23, 105, 224, .08);
   color: #1769e0;
   font-size: 24rpx;
-  line-height: 48rpx;
+  font-weight: 800;
+  line-height: 50rpx;
 }
 
 .option-scroll {
@@ -1054,21 +1318,48 @@ onLoad(async () => {
 .ignore-btn {
   width: 78rpx;
   height: 48rpx;
-  border-radius: 12rpx;
-  background: #fff7ed;
+  border: 1rpx solid rgba(255, 255, 255, .78);
+  border-radius: 16rpx;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(255, 238, 218, .46)),
+    rgba(255, 247, 237, .55);
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, .92), 0 6rpx 14rpx rgba(180, 83, 9, .08);
   color: #b45309;
   font-size: 22rpx;
+  font-weight: 800;
   line-height: 48rpx;
 }
 
-.settings-summary {
+.ignored-manager-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
   margin-top: 14rpx;
   color: #64748b;
   font-size: 24rpx;
 }
 
-.settings-scroll {
+.ignored-manager-scroll {
   max-height: 52vh;
+}
+
+.danger-link {
+  color: #dc2626;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(255, 229, 232, .44)),
+    rgba(255, 242, 244, .56);
+}
+
+.ignored-group {
+  padding-top: 8rpx;
+}
+
+.ignored-group-title {
+  padding: 10rpx 0 4rpx;
+  color: #64748b;
+  font-size: 23rpx;
+  font-weight: 800;
 }
 
 .ignored-option {
@@ -1091,10 +1382,14 @@ onLoad(async () => {
   flex: 0 0 auto;
   width: 78rpx;
   height: 48rpx;
-  border-radius: 12rpx;
-  background: #eaf2ff;
+  border: 1rpx solid rgba(255, 255, 255, .78);
+  border-radius: 16rpx;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(222, 238, 255, .44)),
+    rgba(236, 246, 255, .58);
   color: #1769e0;
   font-size: 22rpx;
+  font-weight: 800;
   line-height: 48rpx;
 }
 
@@ -1106,6 +1401,3 @@ onLoad(async () => {
 }
 
 </style>
-
-
-
