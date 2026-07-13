@@ -9,7 +9,7 @@
 				</view>
 				<image src="https://www.gaobug.com/img/daidai/av/daidai1.png" mode="aspectFill" class="hero_img"></image>
 			</view>
-			<view class="openid-action">
+			<view v-if="showOpenidRetry" class="openid-action">
 				<button class="openid-retry" :loading="refreshingOpenid" @tap="refreshOpenid">重新获取 openid</button>
 			</view>
 
@@ -37,12 +37,13 @@
 </template>
 
 <script setup>
-	import { ref } from 'vue'
+	import { computed, ref } from 'vue'
 	import Refresh from '../../components/Refresh/Refresh/Refresh.vue'
 	import { onLoad, onShareAppMessage, onUnload } from '@dcloudio/uni-app'
-	import { ensureOpenid } from '../../util/openid.js'
+	import { ensureOpenid, getCachedOpenid, openidFetchFailed } from '../../util/openid.js'
 
 	const refreshingOpenid = ref(false)
+	const showOpenidRetry = computed(() => openidFetchFailed.value && !getCachedOpenid())
 	const toolGroups = [
 		{
 			name: '常用功能',

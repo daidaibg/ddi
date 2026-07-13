@@ -1,9 +1,11 @@
 import { baseVar, Request } from './http.js';
+import { ref } from 'vue';
 
 export const OPENID_STORAGE_KEY = 'openid';
 export const USER_SESSION_STORAGE_KEY = 'wxloginsession';
 
 let pendingOpenidRequest;
+export const openidFetchFailed = ref(false);
 
 export function getCachedOpenid() {
   const cachedOpenid = uni.getStorageSync(OPENID_STORAGE_KEY);
@@ -20,6 +22,7 @@ export function ensureOpenid(force = false, { showError = true } = {}) {
   }
   if (pendingOpenidRequest) return pendingOpenidRequest;
 
+  openidFetchFailed.value = false;
   pendingOpenidRequest = new Promise((resolve) => {
     wx.login({
       success: async (loginRes) => {
@@ -56,6 +59,7 @@ export function ensureOpenid(force = false, { showError = true } = {}) {
 }
 
 function resolveWithError(message, resolve, showError) {
+  openidFetchFailed.value = true;
   if (showError) uni.showToast({ title: message, icon: 'none' });
   resolve('');
 }
